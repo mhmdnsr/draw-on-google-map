@@ -1,5 +1,5 @@
-# draw-on-google-map
-draw-on-google-map is a JavaScript library that enable you to draw on google maps. You can draw (Polygons, Markers and free hand style)
+# draw-on-google-maps
+draw-on-google-maps is a JavaScript library that enable you to draw on google maps. You can draw (Polygons, Markers and free hand style)
 
 ****Warning****
 This library works only with **mouth click** due to google maps api does not not provide any touch events.
@@ -8,7 +8,7 @@ This library works only with **mouth click** due to google maps api does not not
 
 **For npm**
 
-`$ npm install --save draw-on-google-map`
+`$ npm install --save draw-on-google-maps`
 
 **For browser**
 
@@ -29,11 +29,11 @@ You can download a minified version of the library from 'dist/draw-on-google-map
 
 After installing the library you can start use it like:
 
-    var MapDraw = require('');
+    var MapDraw = require('draw-on-google-maps');
 
 or 
 
-    import MapDraw from ''
+    import MapDraw from 'draw-on-google-maps'
 
 or
 
@@ -153,4 +153,3 @@ map: Google Maps instance
       
       
 ---
-
