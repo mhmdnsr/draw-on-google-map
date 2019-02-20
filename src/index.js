@@ -1,6 +1,6 @@
 let DrawOnMap = require("./draw-on-map");
 
-class DrawOnGoogleMap {
+class MapDraw {
     #map;
     #draw;
 
@@ -77,4 +77,4 @@ class DrawOnGoogleMap {
     };
 }
 
-module.exports = DrawOnGoogleMap;
+module.exports = MapDraw;

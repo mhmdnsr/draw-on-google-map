@@ -29,11 +29,11 @@ You can download a minified version of the library from 'dist/draw-on-google-map
 
 After installing the library you can start use it like:
 
-    var DrawOnGoogleMap = require('');
+    var MapDraw = require('');
 
 or 
 
-    import DrawOnGoogleMap from ''
+    import MapDraw from ''
 
 or
 
@@ -41,11 +41,11 @@ or
 
 ---
 
-**_Initialize DrawOnGoogleMap_**
+**_Initialize MapDraw_**
 
 To start using the library you have to initialize it first.
 
-    var draw = new DrawOnGoogleMap(map);
+    var draw = new MapDraw(map);
 
 map: Google Maps instance
 
