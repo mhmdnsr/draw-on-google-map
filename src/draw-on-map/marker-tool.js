@@ -31,10 +31,12 @@ class Marker extends Tools {
 
     #setOptions() {
         let icon = null;
-        if(store.states.markerIcon.toLowerCase() === "colorful")
-            icon = new ColorfulMarkerIcon().icon();
-        else if(store.states.markerIcon.toLowerCase() === 'default' || !store.states.markerIcon)
+        if(!store.states.markerIcon)
             icon = null;
+        else if(store.states.markerIcon.toLowerCase() === 'default')
+            icon = null;
+        else if(store.states.markerIcon.toLowerCase() === "colorful")
+            icon = new ColorfulMarkerIcon().icon();
         else
             icon = store.states.markerIcon.toLowerCase();
 
