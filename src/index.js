@@ -23,19 +23,19 @@ class MapDraw {
         this.#draw.clearAllArt();
     }
 
-    changeColor(color){
+    changeColor(color) {
         this.#draw.changeColor(color);
     }
 
-    changeStrokeWeight(weight){
+    changeStrokeWeight(weight) {
         this.#draw.changeStrokeWeight(weight);
     }
 
-    getSelectedTool(){
+    getSelectedTool() {
         return this.#draw.getSelectedTool();
     }
 
-    getSelectedColor(){
+    getSelectedColor() {
         return this.#draw.getSelectedColor();
     }
 

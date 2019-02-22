@@ -33,7 +33,8 @@ class DrawOnMap {
     }
 
     clearBrushArt() {
-        this.#brush.clearDrawn();
+        if (this.#brush)
+            this.#brush.clearDrawn();
     }
 
     startPolygonDraw() {
@@ -52,7 +53,8 @@ class DrawOnMap {
     }
 
     clearPolygonArt() {
-        this.#polygon.clearDrawn();
+        if (this.#polygon)
+            this.#polygon.clearDrawn();
     }
 
     startMarkerDraw() {
@@ -71,47 +73,45 @@ class DrawOnMap {
     }
 
     clearMarkerArt() {
-        this.#marker.clearDrawn();
+        if (this.#marker)
+            this.#marker.clearDrawn();
     }
 
-    clearAllArt(){
-        if(this.#brush)
-            this.#brush.clearBrushArt();
-        if(this.#polygon)
-            this.#polygon.clearPolygonArt();
-        if(this.#marker)
-            this.#marker.clearMarkerArt();
+    clearAllArt() {
+        this.clearBrushArt();
+        this.clearPolygonArt();
+        this.clearMarkerArt();
     }
 
-    changeColor(color){
-        if(color && typeof color === "string")
+    changeColor(color) {
+        if (color && typeof color === "string")
             store.dispatch('changeColor', color);
     }
 
-    changeStrokeWeight(weight){
-        if(weight && typeof weight === "number")
+    changeStrokeWeight(weight) {
+        if (weight && typeof weight === "number")
             store.dispatch('changeStrokeWeight', weight);
     }
 
-    changePolygonFillColor(color){
-        if(color && typeof color === "string")
+    changePolygonFillColor(color) {
+        if (color && typeof color === "string")
             store.dispatch('changePolygonFillColor', color)
     }
 
-    changePolygonOpacity(opacity){
-        if(opacity && typeof opacity === "number")
+    changePolygonOpacity(opacity) {
+        if (opacity && typeof opacity === "number")
             store.dispatch('changePolygonOpacity', opacity)
     }
 
-    changeMarkerIcon(icon){
+    changeMarkerIcon(icon) {
         store.dispatch('changeMarkerIcon', icon);
     }
 
-    getSelectedTool(){
+    getSelectedTool() {
         return store.states.selected.getType();
     }
 
-    getSelectedColor(){
+    getSelectedColor() {
         return store.states.color;
     }
 }

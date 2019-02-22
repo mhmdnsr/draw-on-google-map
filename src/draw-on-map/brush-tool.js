@@ -48,7 +48,7 @@ class Brush extends Tools {
         this.#drawStroke(e);
     }
 
-    #initEvents(){
+    #initEvents() {
         let that = this;
         this.#google.maps.event.addListener(that.#map, 'mousemove', e => {
             that.#drawStroke(e);
@@ -65,7 +65,7 @@ class Brush extends Tools {
     }
 
     startDraw() {
-        if(!(store.states.selected instanceof Brush))
+        if (!(store.states.selected instanceof Brush))
             return;
 
         this.#isSelected = true;
@@ -75,7 +75,7 @@ class Brush extends Tools {
     }
 
     stopDraw() {
-        if(!this.#isSelected)
+        if (!this.#isSelected)
             return;
 
         this.#isSelected = false;
@@ -90,7 +90,7 @@ class Brush extends Tools {
         this.#drawn.length = 0;
     }
 
-    getType(){
+    getType() {
         return 'BRUSH'
     }
 }

@@ -31,11 +31,11 @@ class Marker extends Tools {
 
     #setOptions() {
         let icon = null;
-        if(!store.states.markerIcon)
+        if (!store.states.markerIcon)
             icon = null;
-        else if(store.states.markerIcon.toLowerCase() === 'default')
+        else if (store.states.markerIcon.toLowerCase() === 'default')
             icon = null;
-        else if(store.states.markerIcon.toLowerCase() === "colorful")
+        else if (store.states.markerIcon.toLowerCase() === "colorful")
             icon = new ColorfulMarkerIcon().icon();
         else
             icon = store.states.markerIcon.toLowerCase();
@@ -76,7 +76,7 @@ class Marker extends Tools {
         this.#drawn.length = 0;
     }
 
-    getType(){
+    getType() {
         return 'MARKER'
     }
 }
