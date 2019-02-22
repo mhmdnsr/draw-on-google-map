@@ -31,6 +31,14 @@ class MapDraw {
         this.#draw.changeStrokeWeight(weight);
     }
 
+    getSelectedTool(){
+        return this.#draw.getSelectedTool();
+    }
+
+    getSelectedColor(){
+        return this.#draw.getSelectedColor();
+    }
+
     brush = {
         startDraw: () => {
             this.#draw.startBrushDraw();

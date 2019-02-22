@@ -28,6 +28,8 @@ class DrawOnMap {
         if (!this.#brush)
             throw "Brush Didn't initialized yet! please start Brush drawing before stopping it!";
         this.#brush.stopDraw();
+        if (store.states.selected === this.#brush)
+            store.dispatch('changeSelected', null);
     }
 
     clearBrushArt() {
@@ -45,6 +47,8 @@ class DrawOnMap {
         if (!this.#polygon)
             throw "Polygon Didn't initialized yet! please start Polygon drawing before stopping it!";
         this.#polygon.stopDraw();
+        if (store.states.selected === this.#polygon)
+            store.dispatch('changeSelected', null);
     }
 
     clearPolygonArt() {
@@ -62,6 +66,8 @@ class DrawOnMap {
         if (!this.#marker)
             throw "Marker Didn't initialized yet! please start Marker drawing before stopping it!";
         this.#marker.stopDraw();
+        if (store.states.selected === this.#marker)
+            store.dispatch('changeSelected', null);
     }
 
     clearMarkerArt() {
@@ -99,6 +105,14 @@ class DrawOnMap {
 
     changeMarkerIcon(icon){
         store.dispatch('changeMarkerIcon', icon);
+    }
+
+    getSelectedTool(){
+        return store.states.selected.getType();
+    }
+
+    getSelectedColor(){
+        return store.states.color;
     }
 }
 

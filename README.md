@@ -77,6 +77,15 @@ map: Google Maps instance
       
    _weight (number)_
    
+- _Get Selected Tool:_
+
+      draw.getSelectedTool()
+    returns STRING (BRUSH / POLYGON / MARKER)
+   
+- _Get Selected Color:_
+
+      draw.getSelectedTool()
+    returns STRING color
 ---
       
 - **_Brush Draw_**

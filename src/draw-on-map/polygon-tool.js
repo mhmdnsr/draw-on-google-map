@@ -66,6 +66,10 @@ class Polygon extends Tools {
         this.#drawn.map(obj => obj.setMap(null));
         this.#drawn.length = 0;
     }
+
+    getType(){
+        return 'POLYGON'
+    }
 }
 
 module.exports = Polygon;

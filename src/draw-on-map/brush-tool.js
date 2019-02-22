@@ -89,6 +89,10 @@ class Brush extends Tools {
         this.#drawn.map(obj => obj.setMap(null));
         this.#drawn.length = 0;
     }
+
+    getType(){
+        return 'BRUSH'
+    }
 }
 
 module.exports = Brush;

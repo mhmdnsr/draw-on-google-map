@@ -75,6 +75,10 @@ class Marker extends Tools {
         this.#drawn.map(obj => obj.setMap(null));
         this.#drawn.length = 0;
     }
+
+    getType(){
+        return 'MARKER'
+    }
 }
 
 module.exports = Marker;
