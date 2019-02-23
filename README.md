@@ -4,6 +4,9 @@ draw-on-google-maps is a JavaScript library that enable you to draw on google ma
 ****Warning****
 This library works only with **mouth click** due to google maps api does not not provide any touch events.
 
+****Demo****
+  `http://drawonmap.mohamed-nsr.com`
+
 ****_Install_**** 
 
 **For npm**
@@ -84,7 +87,7 @@ map: Google Maps instance
    
 - _Get Selected Color:_
 
-      draw.getSelectedTool()
+      draw.getSelectedColor()
     returns STRING color
 ---
       
