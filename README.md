@@ -5,7 +5,7 @@ draw-on-google-maps is a JavaScript library that enable you to draw on google ma
 This library works only with **mouth click** due to google maps api does not not provide any touch events.
 
 ****Demo****
-  `http://drawonmap.mohamed-nsr.com`
+  http://drawonmap.mohamed-nsr.com
 
 ****_Install_**** 
 
@@ -17,7 +17,7 @@ This library works only with **mouth click** due to google maps api does not not
 
 You can download a minified version of the library from 'dist/draw-on-google-map.js' on github project: 
 
-`https://github.com/mhmdnsr/draw-on-google-map`
+https://github.com/mhmdnsr/draw-on-google-map
 
 ****How to use?****
 
