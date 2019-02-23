@@ -1,9 +1,6 @@
 # draw-on-google-maps
 draw-on-google-maps is a JavaScript library that enable you to draw on google maps. You can draw (Polygons, Markers and free hand style)
 
-****Warning****
-This library works only with **mouth click** due to google maps api does not not provide any touch events.
-
 ****Demo****
   http://drawonmap.mohamed-nsr.com
 
