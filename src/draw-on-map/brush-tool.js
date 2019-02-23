@@ -68,6 +68,7 @@ class Brush extends Tools {
         if (!(store.states.selected instanceof Brush))
             return;
 
+        this.#map.setOptions({draggableCursor:'cell'});
         this.#isSelected = true;
         this.BRUSH = this.#initTool();
         this.#setOptions();
@@ -78,6 +79,7 @@ class Brush extends Tools {
         if (!this.#isSelected)
             return;
 
+        this.#map.setOptions({draggableCursor:'url("https://maps.gstatic.com/mapfiles/openhand_8_8.cur"), default'});
         this.#isSelected = false;
         this.#google.maps.event.clearListeners(this.#map, 'mousemove');
         this.#google.maps.event.clearListeners(this.#map, 'mouseup');
