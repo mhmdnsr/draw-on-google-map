@@ -1,6 +1,6 @@
 {
   "name": "draw-on-google-map-dev",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "draw-on-google-map is a JavaScript library that enable you to draw on google maps. You can draw (Polygons, Markers and free hand style)",
   "main": "src/index.js",
   "author": "Mohamed Nasr",
