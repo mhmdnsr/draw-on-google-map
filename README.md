@@ -1,164 +1,177 @@
-# draw-on-google-maps
-draw-on-google-maps is a JavaScript library that enable you to draw on google maps. You can draw (Polygons, Markers and free hand style)
+# Draw On Google Map
 
-****Demo****
-https://react-draw-on-google-map.vercel.app/
+[![npm version](https://img.shields.io/npm/v/draw-on-google-map.svg?style=flat-square)](https://www.npmjs.com/package/draw-on-google-map)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-****_Install_**** 
+A lightweight, dependency-free (except for Google Maps API) library to draw polygons, markers, polylines, circles, rectangles, and freehand brushes on Google Maps.
 
-**For npm**
+This library provides a simple API to manage drawing tools, customize styles (colors, stroke weights, opacity), and handle multiple independent map instances.
 
-`$ npm install --save draw-on-google-maps`
+## ✨ Features
 
-**For browser**
+*   **Multiple Tools:** Polygon, Marker, Polyline, Circle, Rectangle, and Freehand Brush.
+*   **Customizable:** Easily change stroke color, fill color, stroke weight, and opacity.
+*   **Independent Instances:** Supports multiple map instances on the same page.
+*   **Framework Agnostic:** Works with Vanilla JS, React, Vue, Angular, etc.
+*   **TypeScript Support:** Written in TypeScript with full type definitions included.
+*   **Performance:** Optimized marker rendering using `TextMetrics` and caching.
 
-You can download a minified version of the library from 'dist/draw-on-google-map.js' on github project: 
+## 📦 Installation
 
-https://github.com/mhmdnsr/draw-on-google-map
+```bash
+npm install draw-on-google-map
+```
 
-****How to use?****
+or via CDN:
 
-**_Pre-requests_**
+```html
+<script src="https://unpkg.com/draw-on-google-map/dist/draw-on-google-map.umd.js"></script>
+```
 
-- Google Maps API Key
-- Drawing Library
+## 🚀 Usage
 
--Initialize Google Map
+### 1. Load Google Maps API
 
-**_Import It_**
+Ensure the Google Maps JavaScript API is loaded in your project before initializing the library.
 
-After installing the library you can start use it like:
+```html
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
+```
 
-    var MapDraw = require('draw-on-google-maps');
+### 2. Initialize the Library
 
-or 
+```javascript
+import DrawOnMap from 'draw-on-google-map';
 
-    import MapDraw from 'draw-on-google-maps'
+const map = new google.maps.Map(document.getElementById("map"), {
+    center: { lat: -34.397, lng: 150.644 },
+    zoom: 8,
+});
 
-or
+const draw = new DrawOnMap(map);
+```
 
-    <script src="path/to/library/draw-on-google-map.js"></script>
+### 3. Use Drawing Tools
 
----
+You can start and stop drawing using the exposed methods for each tool.
 
-**_Initialize MapDraw_**
+#### Brush (Freehand)
+```javascript
+draw.brush.startDraw();
+// ... user draws on map ...
+draw.brush.stopDraw();
+draw.brush.clearArt(); // Clears all brush strokes
+```
 
-To start using the library you have to initialize it first.
+#### Polygon
+```javascript
+draw.polygon.startDraw();
+// ... user clicks to add points, double click to finish ...
+draw.polygon.stopDraw();
+draw.polygon.clearArt();
+```
 
-    var draw = new MapDraw(map);
+#### Marker
+```javascript
+draw.marker.startDraw();
+// ... user clicks to place markers ...
+draw.marker.stopDraw();
+draw.marker.changeIcon('https://path/to/icon.png'); // Change marker icon
+```
 
-map: Google Maps instance
+#### Other Tools
+Available tools: `polyline`, `circle`, `rectangle`. All follow the same `startDraw()`, `stopDraw()`, and `clearArt()` pattern.
 
----
+### 4. Customizing Styles
 
-***API***
+You can change global drawing styles which apply to the currently selected tool and future drawings.
 
-- _Hold Map To Start Draw:_
+```javascript
+// Change stroke color (for all tools)
+draw.changeColor('#FF0000');
 
-      draw.holdMap();
+// Change stroke weight (for all tools)
+draw.changeStrokeWeight(5);
 
-- _Release Map After Finishing Draw:_
+// Change polygon fill color
+draw.changePolygonFillColor('#00FF00');
 
-      draw.releaseMap();
+// Change polygon fill opacity (0.0 to 1.0)
+draw.changePolygonOpacity(0.5);
+```
 
-- _Clear All Drawn Art:_
+## ⚛️ Framework Examples
 
-      draw.clearAllArt();
+### React
 
-- _Change Stroke Color:_
+```tsx
+import React, { useEffect, useRef, useState } from 'react';
+import DrawOnMap from 'draw-on-google-map';
 
-      draw.changeColor(color);
+const MapComponent = () => {
+    const mapRef = useRef(null);
+    const [drawTools, setDrawTools] = useState(null);
 
-    _color (string)_
+    useEffect(() => {
+        if (window.google && mapRef.current) {
+            const map = new window.google.maps.Map(mapRef.current, {
+                center: { lat: 0, lng: 0 },
+                zoom: 4,
+            });
+            const tools = new DrawOnMap(map);
+            setDrawTools(tools);
+        }
+    }, []);
 
-- _Change Stroke Weight:_
+    return (
+        <div>
+            <div ref={mapRef} style={{ height: '400px', width: '100%' }} />
+            <button onClick={() => drawTools?.brush.startDraw()}>Draw Brush</button>
+            <button onClick={() => drawTools?.brush.stopDraw()}>Stop Drawing</button>
+        </div>
+    );
+};
+```
 
-      draw.changeStrokeWeight(weight);
-      
-   _weight (number)_
-   
-- _Get Selected Tool:_
+## 📖 API Reference
 
-      draw.getSelectedTool()
-    returns STRING (BRUSH / POLYGON / MARKER)
-   
-- _Get Selected Color:_
+### `new DrawOnMap(map: google.maps.Map)`
+Creates a new instance of the drawing tools for the specific map.
 
-      draw.getSelectedColor()
-    returns STRING color
----
-      
-- **_Brush Draw_**
-            
-      draw.brush
-    - _Start Brush Draw:_
-         
-          draw.brush.startDraw();
-         
-    - _Stop Brush Draw:_
-    
-          draw.brush.stopDraw();
-          
-    - _Clear Brush Drawn Art:_
+### Properties
+*   `brush`: Brush tool instance.
+*   `polygon`: Polygon tool instance.
+*   `polyline`: Polyline tool instance.
+*   `circle`: Circle tool instance.
+*   `rectangle`: Rectangle tool instance.
+*   `marker`: Marker tool instance.
 
-          draw.brush.clearArt();
-          
----
+### Methods (Global)
+*   `changeColor(color: string)`: Sets the stroke color.
+*   `changeStrokeWeight(weight: number)`: Sets the stroke weight.
+*   `changePolygonFillColor(color: string)`: Sets the fill color for polygons.
+*   `changePolygonOpacity(opacity: number)`: Sets the fill opacity (0-1).
+*   `changeMarkerIcon(icon: string)`: Sets the icon URL for markers.
+*   `getSelectedTool()`: Returns the type of the currently active tool.
+*   `getSelectedColor()`: Returns the current color.
+*   `clearAllArt()`: Clears drawings from all tools.
 
-- **_Polygon Draw_**
-    
-      draw.polygon
-    - _Start Polygon Draw:_
-    
-          draw.polygon.startDraw();
-         
-    - _Stop Polygon Draw:_
-    
-          draw.polygon.stopDraw();
-          
-    - _Clear Polygon Draw Art:_
-    
-          draw.polygon.clearArt();
-          
-    - _Change Polygon Fill Color:_
-        
-          draw.polygon.changeFillColor(color);
-          
-        _color (string)_
-              
-    - _Change Polygon Fill Color Opacity:_
-    
-          draw.polygon.changeOpacity(opacity);
-          
-        _opacity (number)_
-        
-        From 0 to 1. 0 is transparent and 1 is fully visible
+### Methods (Per Tool)
+Each tool (brush, polygon, etc.) has:
+*   `startDraw()`: Activates the tool.
+*   `stopDraw()`: Deactivates the tool.
+*   `clearArt()`: Clears drawings created by this specific tool.
 
----
-      
-- **_Marker Draw_**
-    
-      draw.marker
-    - _Start Marker Draw:_
-    
-          draw.marker.startDraw();
-         
-    - _Stop Marker Draw:_
-    
-          draw.marker.stopDraw();
-          
-    - _Clear Marker Draw Art:_
-    
-          draw.marker.clearArt();
-          
-    - _Change Marker Icon:_ 
-    
-          draw.marker.changeIcon(icon);
-          
-      _icon (string)_
-      - default : Add Google Map default marker.
-      - colorful : Custom marker with selected color.
-      - Any Icon link
-      
-      
----
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1.  Fork the repository.
+2.  Create a new branch (`git checkout -b feature/amazing-feature`).
+3.  Commit your changes (`git commit -m 'Add some amazing feature'`).
+4.  Push to the branch (`git push origin feature/amazing-feature`).
+5.  Open a Pull Request.
+
+## 📄 License
+
+This project is licensed under the MIT License.

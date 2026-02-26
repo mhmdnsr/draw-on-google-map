@@ -6,6 +6,8 @@
 *   **Modern Build System:** Replaced Webpack with Vite for faster builds and modern ESM/UMD output.
 *   **Performance Optimization:** Optimized `ColorfulMarkerIcon` generation using `TextMetrics` and caching, significantly reducing CPU usage when rendering many markers.
 *   **Instance-Based Architecture:** Fixed a critical bug where state was shared globally. You can now have multiple independent maps on the same page.
+*   **Code Cleanup:** Removed legacy JavaScript files and standardized the project structure.
+*   **Testing Infrastructure:** Added a comprehensive test suite using Vitest for core library components, ensuring stability and reliability.
 
 ## ✨ New Features
 
@@ -24,5 +26,5 @@
 ## 📦 Installation
 
 ```bash
-npm install draw-on-google-maps@latest
+npm install draw-on-google-map@latest
 ```
