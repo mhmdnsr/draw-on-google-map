@@ -1,6 +1,6 @@
 # Release Notes - v2.0.0
 
-`v2.0.0` is a full modernization release for `draw-on-google-map`.
+`v2.0.0` is a full modernization release for `draw-on-google-maps`.
 
 Highlights:
 - TypeScript-based refactor with safer lifecycle handling.

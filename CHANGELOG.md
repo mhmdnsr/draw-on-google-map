@@ -15,7 +15,7 @@ All notable changes to this project are documented in this file.
 - Full TypeScript rewrite of the library internals.
 - Per-instance state management architecture (no shared global drawing state).
 - Modernized build pipeline using Vite + TypeScript declarations.
-- Public package identity standardized to `draw-on-google-map`.
+- Public package identity standardized to `draw-on-google-maps`.
 
 ### Fixed
 - Tool selection now safely returns `null` when no tool is active.

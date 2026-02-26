@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import MapDraw from 'draw-on-google-map';
+import MapDraw from 'draw-on-google-maps';
 
 // Ensure Google Maps typings are available or declare var google: any;
 

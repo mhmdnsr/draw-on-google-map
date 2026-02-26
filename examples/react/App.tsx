@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import MapDraw from 'draw-on-google-map';
+import MapDraw from 'draw-on-google-maps';
 
 // Ensure you have loaded Google Maps API in your index.html or using a loader
 // <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=marker,geometry"></script>

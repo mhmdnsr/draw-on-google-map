@@ -1,5 +1,5 @@
 {
-  "name": "draw-on-google-map",
+  "name": "draw-on-google-maps",
   "version": "2.0.0",
   "description": "Draw polygons, markers, polylines, circles, rectangles, and freehand strokes on Google Maps.",
   "main": "./dist/draw-on-google-map.umd.js",

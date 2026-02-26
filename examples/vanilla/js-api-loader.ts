@@ -1,5 +1,5 @@
 import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
-import DrawOnMap from 'draw-on-google-map';
+import DrawOnMap from 'draw-on-google-maps';
 
 setOptions({
   key: 'YOUR_API_KEY',

@@ -1,9 +1,9 @@
 # Draw On Google Map
 
-[![npm version](https://img.shields.io/npm/v/draw-on-google-map.svg?style=flat-square)](https://www.npmjs.com/package/draw-on-google-map)
+[![npm version](https://img.shields.io/npm/v/draw-on-google-maps.svg?style=flat-square)](https://www.npmjs.com/package/draw-on-google-maps)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-`draw-on-google-map` is a framework-agnostic TypeScript library for drawing and managing overlays on Google Maps.
+`draw-on-google-maps` is a framework-agnostic TypeScript library for drawing and managing overlays on Google Maps.
 
 Supported tools:
 - Brush (freehand)
@@ -16,7 +16,7 @@ Supported tools:
 ## Installation
 
 ```bash
-npm install draw-on-google-map
+npm install draw-on-google-maps
 ```
 
 ## Google Maps Loading Options
@@ -27,7 +27,7 @@ The library works with all common Google Maps JS loading patterns.
 
 ```html
 <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=marker,geometry"></script>
-<script src="https://unpkg.com/draw-on-google-map@latest/dist/draw-on-google-map.umd.js"></script>
+<script src="https://unpkg.com/draw-on-google-maps@latest/dist/draw-on-google-map.umd.js"></script>
 <script>
   const map = new google.maps.Map(document.getElementById('map'), {
     center: { lat: 30.0444, lng: 31.2357 },
@@ -62,7 +62,7 @@ The library works with all common Google Maps JS loading patterns.
   })({ key: 'YOUR_API_KEY' });
 </script>
 <script type="module">
-  import DrawOnMap from 'https://cdn.jsdelivr.net/npm/draw-on-google-map@latest/dist/draw-on-google-map.es.js';
+  import DrawOnMap from 'https://cdn.jsdelivr.net/npm/draw-on-google-maps@latest/dist/draw-on-google-map.es.js';
 
   const { Map } = await google.maps.importLibrary('maps');
   await google.maps.importLibrary('geometry');
@@ -82,7 +82,7 @@ The library works with all common Google Maps JS loading patterns.
 
 ```ts
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
-import DrawOnMap from 'draw-on-google-map';
+import DrawOnMap from 'draw-on-google-maps';
 
 setOptions({ key: process.env.GOOGLE_MAPS_API_KEY!, v: 'weekly' });
 
@@ -108,14 +108,14 @@ Notes:
 
 Bundled files are published to npm and can be consumed from CDNs:
 
-- UMD: `https://unpkg.com/draw-on-google-map@latest/dist/draw-on-google-map.umd.js`
-- UMD: `https://cdn.jsdelivr.net/npm/draw-on-google-map@latest/dist/draw-on-google-map.umd.js`
-- ESM: `https://cdn.jsdelivr.net/npm/draw-on-google-map@latest/dist/draw-on-google-map.es.js`
+- UMD: `https://unpkg.com/draw-on-google-maps@latest/dist/draw-on-google-map.umd.js`
+- UMD: `https://cdn.jsdelivr.net/npm/draw-on-google-maps@latest/dist/draw-on-google-map.umd.js`
+- ESM: `https://cdn.jsdelivr.net/npm/draw-on-google-maps@latest/dist/draw-on-google-map.es.js`
 
 ## Quick Start (NPM)
 
 ```ts
-import DrawOnMap from 'draw-on-google-map';
+import DrawOnMap from 'draw-on-google-maps';
 
 const map = new google.maps.Map(document.getElementById('map') as HTMLElement, {
   center: { lat: 30.0444, lng: 31.2357 },
