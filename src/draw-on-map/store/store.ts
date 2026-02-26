@@ -1,7 +1,23 @@
-let PubSub = require('./pub-sub');
+import { PubSub } from './pub-sub';
 
-class Store {
-    constructor(params) {
+export interface State {
+    [key: string]: any;
+}
+
+export interface StoreParams {
+    state: State;
+    actions?: { [key: string]: Function };
+    mutations?: { [key: string]: Function };
+}
+
+export class Store {
+    actions: { [key: string]: Function };
+    mutations: { [key: string]: Function };
+    states: State;
+    status: string;
+    events: PubSub;
+
+    constructor(params: StoreParams) {
         let self = this;
 
         this.actions = {};
@@ -10,15 +26,15 @@ class Store {
         this.status = 'resting';
         this.events = new PubSub();
 
-        if (params.hasOwnProperty('actions')) {
+        if (params.hasOwnProperty('actions') && params.actions) {
             this.actions = params.actions;
         }
 
-        if (params.hasOwnProperty('mutations')) {
+        if (params.hasOwnProperty('mutations') && params.mutations) {
             this.mutations = params.mutations;
         }
         this.states = new Proxy(params.state, {
-            set: function(state, key, value) {
+            set: function(state, key: string, value: any) {
                 state[key] = value;
                 self.events.publish('stateChange', self.states);
                 self.status = 'resting';
@@ -27,7 +43,7 @@ class Store {
         });
     }
 
-    dispatch(actionKey, payload) {
+    dispatch(actionKey: string, payload: any) {
         if(typeof this.actions[actionKey] !== 'function') {
             console.error(`Action "${actionKey} doesn't exist.`);
             return false;
@@ -37,7 +53,7 @@ class Store {
         return true;
     }
 
-    commit(mutationKey, payload) {
+    commit(mutationKey: string, payload: any) {
         if(typeof this.mutations[mutationKey] !== 'function') {
             console.error(`Mutation "${mutationKey}" doesn't exist`);
             return false;
@@ -48,5 +64,3 @@ class Store {
         return true;
     }
 }
-
-module.exports = Store;

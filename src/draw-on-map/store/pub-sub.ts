@@ -1,9 +1,11 @@
-class PubSub {
+export class PubSub {
+    events: { [key: string]: Function[] };
+
     constructor() {
         this.events = {};
     }
 
-    subscribe(event, callback) {
+    subscribe(event: string, callback: Function) {
         let self = this;
         if (!self.events.hasOwnProperty(event)) {
             self.events[event] = [];
@@ -11,7 +13,7 @@ class PubSub {
         return self.events[event].push(callback);
     }
 
-    publish(event, data = {}) {
+    publish(event: string, data: any = {}) {
         let self = this;
         if(!self.events.hasOwnProperty(event)) {
             return [];
@@ -19,5 +21,3 @@ class PubSub {
         return self.events[event].map(callback => callback(data));
     }
 }
-
-module.exports = PubSub;

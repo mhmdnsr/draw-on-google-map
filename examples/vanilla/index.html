@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Draw On Google Map - Vanilla JS Example</title>
+    <style>
+      #map {
+        height: 500px;
+        width: 100%;
+      }
+      .controls {
+        margin: 10px 0;
+      }
+    </style>
+    <!-- Replace YOUR_API_KEY with your actual Google Maps API key -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=marker,geometry"></script>
+    <!-- Include the library (assuming it's in the same directory or adjust path) -->
+    <script src="draw-on-google-map.umd.js"></script>
+  </head>
+  <body>
+    <h1>Draw On Google Map - Vanilla JS</h1>
+    <div class="controls">
+      <button onclick="draw.brush.startDraw()">Start Brush</button>
+      <button onclick="draw.brush.stopDraw()">Stop Brush</button>
+      <button onclick="draw.polygon.startDraw()">Start Polygon</button>
+      <button onclick="draw.polygon.stopDraw()">Stop Polygon</button>
+      <button onclick="draw.polyline.startDraw()">Start Polyline</button>
+      <button onclick="draw.polyline.stopDraw()">Stop Polyline</button>
+      <button onclick="draw.circle.startDraw()">Start Circle</button>
+      <button onclick="draw.circle.stopDraw()">Stop Circle</button>
+      <button onclick="draw.rectangle.startDraw()">Start Rectangle</button>
+      <button onclick="draw.rectangle.stopDraw()">Stop Rectangle</button>
+      <button onclick="draw.marker.startDraw()">Start Marker</button>
+      <button onclick="draw.marker.stopDraw()">Stop Marker</button>
+      <button onclick="draw.clearAllArt()">Clear All</button>
+    </div>
+    <div id="map"></div>
+
+    <script>
+      let map;
+      let draw;
+
+      function initMap() {
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: { lat: -34.397, lng: 150.644 },
+          zoom: 8,
+          mapId: "DEMO_MAP_ID" // Required for AdvancedMarkerElement
+        });
+
+        // Initialize library
+        draw = new DrawOnGoogleMap(map);
+      }
+
+      // Initialize map when window loads
+      window.onload = initMap;
+    </script>
+  </body>
+</html>
