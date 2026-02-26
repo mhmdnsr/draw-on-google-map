@@ -14,11 +14,13 @@
     <!-- Replace YOUR_API_KEY with your actual Google Maps API key -->
     <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=marker,geometry"></script>
     <!-- Include the library (assuming it's in the same directory or adjust path) -->
-    <script src="draw-on-google-map.umd.js"></script>
+    <script src="/dist/draw-on-google-map.umd.js"></script>
   </head>
   <body>
     <h1>Draw On Google Map - Vanilla JS</h1>
     <div class="controls">
+      <button onclick="draw.holdMap()">Hold Map</button>
+      <button onclick="draw.releaseMap()">Release Map</button>
       <button onclick="draw.brush.startDraw()">Start Brush</button>
       <button onclick="draw.brush.stopDraw()">Stop Brush</button>
       <button onclick="draw.polygon.startDraw()">Start Polygon</button>

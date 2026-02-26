@@ -1,2 +1,54 @@
-.idea
-node_modules
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
+*.tgz
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+.npmrc
+!.npmrc.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.csr
+*.jks
+*.keystore
+*.asc
+*.secret
+secrets/
+
+# Local databases and caches
+*.db
+*.sqlite
+*.sqlite3
+.cache/
+.tmp/
+tmp/
+.eslintcache
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

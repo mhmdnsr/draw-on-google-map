@@ -1,122 +1,144 @@
-import { Store } from './store/store';
+import { BaseTool } from './base-tool';
+import { Store } from './store';
+import { DrawShape, ToolCallbacks } from './types';
+import { createShapeId, distanceBetween, toLatLngLiteral } from './utils';
 
-export class Circle {
-    #map: google.maps.Map;
-    #store: Store;
-    #isSelected: boolean = false;
-    #drawn: google.maps.Circle[] = [];
+export class Circle extends BaseTool {
+  private center: google.maps.LatLngLiteral | null = null;
+  private radius = 0;
+  private tempCircle: google.maps.Circle | null = null;
+  private isDragging = false;
 
-    #mouseDownListener: google.maps.MapsEventListener | null = null;
-    #mouseMoveListener: google.maps.MapsEventListener | null = null;
-    #mouseUpListener: google.maps.MapsEventListener | null = null;
+  constructor(map: google.maps.Map, store: Store, callbacks: ToolCallbacks) {
+    super('CIRCLE', map, store, callbacks);
+  }
 
-    #center: google.maps.LatLng | null = null;
-    #tempCircle: google.maps.Circle | null = null;
-    #isDragging: boolean = false;
-
-    constructor(map: google.maps.Map, store: Store) {
-        this.#map = map;
-        this.#store = store;
+  startDraw(): void {
+    if (this.isDrawing) {
+      return;
     }
 
-    startDraw = () => {
-        if (!(this.#store.states.selected instanceof Circle)) return;
+    this.isDrawing = true;
+    this.map.setOptions({ draggable: false, draggableCursor: 'crosshair', clickableIcons: false });
 
-        this.#isSelected = true;
-        this.#map.setOptions({ draggable: false, draggableCursor: 'crosshair', clickableIcons: false });
+    this.addMapListener('mousedown', (event) => {
+      if (!this.isDrawing || !event.latLng) {
+        return;
+      }
 
-        this.#mouseDownListener = this.#map.addListener('mousedown', (e: google.maps.MapMouseEvent) => {
-            if (!this.#isSelected || !e.latLng) return;
-            this.startDragging(e.latLng);
-        });
+      this.startDragging(event.latLng);
+    });
 
-        this.#mouseMoveListener = this.#map.addListener('mousemove', (e: google.maps.MapMouseEvent) => {
-            if (!this.#isSelected || !this.#isDragging || !e.latLng) return;
-            this.updateRadius(e.latLng);
-        });
+    this.addMapListener('mousemove', (event) => {
+      if (!this.isDrawing || !this.isDragging || !event.latLng) {
+        return;
+      }
 
-        this.#mouseUpListener = this.#map.addListener('mouseup', (_e: google.maps.MapMouseEvent) => {
-            if (!this.#isSelected || !this.#isDragging) return;
-            this.finishCircle();
-        });
+      this.updateRadius(event.latLng);
+    });
+
+    this.addMapListener('mouseup', () => {
+      if (!this.isDrawing || !this.isDragging) {
+        return;
+      }
+
+      this.finishCircle();
+    });
+  }
+
+  stopDraw(): void {
+    if (!this.isDrawing) {
+      return;
     }
 
-    stopDraw = () => {
-        if (!this.#isSelected) return;
+    this.clearListeners();
+    this.cleanupDraft();
+    this.map.setOptions({ draggable: true, draggableCursor: null, clickableIcons: true });
+    this.isDrawing = false;
+  }
 
-        this.#isSelected = false;
-        this.#map.setOptions({ draggable: true, draggableCursor: null, clickableIcons: true });
-        this.cleanupListeners();
-        this.cleanupTemp();
+  protected createOverlayFromShape(shape: DrawShape): unknown {
+    const geometry = shape.geometry as { center: google.maps.LatLngLiteral; radius: number };
+
+    return new google.maps.Circle({
+      map: this.map,
+      center: geometry.center,
+      radius: geometry.radius,
+      strokeColor: shape.style.strokeColor,
+      strokeWeight: shape.style.strokeWeight,
+      fillColor: shape.style.fillColor,
+      fillOpacity: shape.style.fillOpacity,
+      clickable: true,
+    });
+  }
+
+  private startDragging(latLng: google.maps.LatLng): void {
+    this.isDragging = true;
+    this.center = toLatLngLiteral(latLng);
+    this.radius = 0;
+
+    this.tempCircle = new google.maps.Circle({
+      map: this.map,
+      center: this.center,
+      radius: this.radius,
+      strokeColor: this.store.states.color,
+      strokeWeight: this.store.states.strokeWeight,
+      fillColor: this.store.states.polygonFillColor,
+      fillOpacity: this.store.states.polygonOpacity,
+      clickable: false,
+    });
+  }
+
+  private updateRadius(cursorLatLng: google.maps.LatLng): void {
+    if (!this.tempCircle || !this.center) {
+      return;
     }
 
-    private cleanupListeners() {
-        if (this.#mouseDownListener) {
-            google.maps.event.removeListener(this.#mouseDownListener);
-            this.#mouseDownListener = null;
-        }
-        if (this.#mouseMoveListener) {
-            google.maps.event.removeListener(this.#mouseMoveListener);
-            this.#mouseMoveListener = null;
-        }
-        if (this.#mouseUpListener) {
-            google.maps.event.removeListener(this.#mouseUpListener);
-            this.#mouseUpListener = null;
-        }
+    this.radius = distanceBetween(this.center, toLatLngLiteral(cursorLatLng));
+    this.tempCircle.setRadius(this.radius);
+  }
+
+  private finishCircle(): void {
+    if (!this.center || !this.tempCircle || this.radius <= 0) {
+      this.cleanupDraft();
+      return;
     }
 
-    private startDragging(latLng: google.maps.LatLng) {
-        this.#isDragging = true;
-        this.#center = latLng;
+    const finalCircle = this.tempCircle;
 
-        this.#tempCircle = new google.maps.Circle({
-            map: this.#map,
-            center: this.#center,
-            radius: 0,
-            strokeColor: this.#store.states.color,
-            strokeWeight: this.#store.states.strokeWeight,
-            fillColor: this.#store.states.polygonFillColor,
-            fillOpacity: this.#store.states.polygonOpacity,
-            clickable: false
-        });
+    const shape: DrawShape = {
+      id: createShapeId('CIRCLE'),
+      type: 'CIRCLE',
+      geometry: {
+        center: this.center,
+        radius: this.radius,
+      },
+      style: {
+        strokeColor: this.store.states.color,
+        strokeWeight: this.store.states.strokeWeight,
+        fillColor: this.store.states.polygonFillColor,
+        fillOpacity: this.store.states.polygonOpacity,
+      },
+      metadata: {
+        createdAt: new Date().toISOString(),
+        source: 'draw',
+      },
+    };
+
+    finalCircle.setOptions({ clickable: true });
+    this.tempCircle = null;
+    this.rememberShape(shape, finalCircle);
+    this.cleanupDraft();
+  }
+
+  private cleanupDraft(): void {
+    if (this.tempCircle) {
+      this.tempCircle.setMap(null);
+      this.tempCircle = null;
     }
 
-    private updateRadius(cursorLatLng: google.maps.LatLng) {
-        if (!this.#tempCircle || !this.#center) return;
-
-        const radius = google.maps.geometry.spherical.computeDistanceBetween(this.#center, cursorLatLng);
-        this.#tempCircle.setRadius(radius);
-    }
-
-    private finishCircle() {
-        if (this.#tempCircle) {
-            // Make it permanent
-            this.#tempCircle.setOptions({ clickable: true });
-            this.#drawn.push(this.#tempCircle);
-            this.#tempCircle = null;
-        }
-
-        this.#isDragging = false;
-        this.#center = null;
-    }
-
-    private cleanupTemp() {
-        if (this.#tempCircle) {
-            this.#tempCircle.setMap(null);
-            this.#tempCircle = null;
-        }
-        this.#isDragging = false;
-        this.#center = null;
-    }
-
-    clearArt() {
-        this.#drawn.forEach(c => c.setMap(null));
-        this.#drawn = [];
-    }
-
-    clearDrawn() {
-        this.clearArt();
-    }
-
-    getType() { return 'CIRCLE'; }
+    this.center = null;
+    this.radius = 0;
+    this.isDragging = false;
+  }
 }

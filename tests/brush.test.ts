@@ -1,64 +1,72 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Brush } from '../src/draw-on-map/brush-tool';
-import createStore, { Store } from '../src/draw-on-map/store/index';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import DrawOnMap from '../src/draw-on-map';
 
-describe('Brush Tool', () => {
-    let map: google.maps.Map;
-    let store: Store;
-    let brushTool: Brush;
-    let googleMock: any;
+describe('DrawOnMap Events and Serialization', () => {
+  let map: any;
+  let draw: DrawOnMap;
 
-    beforeEach(() => {
-        // Create a mock map
-        map = new google.maps.Map(document.createElement('div'), {});
-        store = createStore();
-        googleMock = global.window.google;
-        brushTool = new Brush(map, googleMock, store);
+  beforeEach(() => {
+    map = new google.maps.Map(document.createElement('div'), {});
+    draw = new DrawOnMap(map);
+  });
+
+  it('emits tool and shape lifecycle events', () => {
+    const onToolChanged = vi.fn();
+    const onShapeCreated = vi.fn();
+    const onShapeCleared = vi.fn();
+
+    draw.on('toolChanged', onToolChanged);
+    draw.on('shapeCreated', onShapeCreated);
+    draw.on('shapeCleared', onShapeCleared);
+
+    draw.marker.startDraw();
+    map.trigger('click', { latLng: new google.maps.LatLng(10, 20) });
+
+    expect(onToolChanged).toHaveBeenCalledWith({ tool: 'MARKER' });
+    expect(onShapeCreated).toHaveBeenCalledTimes(1);
+
+    draw.marker.clearArt();
+    expect(onShapeCleared).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tool: 'MARKER',
+      }),
+    );
+  });
+
+  it('imports and exports json + geojson payloads', () => {
+    const imported = vi.fn();
+    const exported = vi.fn();
+
+    draw.on('imported', imported);
+    draw.on('exported', exported);
+
+    draw.importData({
+      shapes: [
+        {
+          id: 'marker-1',
+          type: 'MARKER',
+          geometry: { position: { lat: 1, lng: 2 } },
+          style: { strokeColor: '#f00', strokeWeight: 1, markerIcon: null },
+          metadata: { createdAt: new Date().toISOString() },
+        },
+        {
+          id: 'polyline-1',
+          type: 'POLYLINE',
+          geometry: { path: [{ lat: 0, lng: 0 }, { lat: 1, lng: 1 }] },
+          style: { strokeColor: '#0f0', strokeWeight: 2 },
+          metadata: { createdAt: new Date().toISOString() },
+        },
+      ],
     });
 
-    it('should initialize correctly', () => {
-        expect(brushTool).toBeDefined();
-        expect(brushTool.getType()).toBe('BRUSH');
-    });
+    const jsonShapes = draw.exportData('json') as any[];
+    const geojson = draw.exportData('geojson') as any;
 
-    it('should set map options and add listeners on startDraw', () => {
-        // Mock startDraw behavior directly or simulate store selection if needed
-        // The startDraw method checks `this.#store.states.selected instanceof Brush`
-        // We need to set the store state to make the check pass.
-        store.dispatch('changeSelected', brushTool);
-
-        const setOptionsSpy = vi.spyOn(map, 'setOptions');
-        const addListenerSpy = vi.spyOn(google.maps.event, 'addListener');
-
-        brushTool.startDraw();
-
-        expect(setOptionsSpy).toHaveBeenCalledWith({ draggableCursor: 'cell' });
-        expect(addListenerSpy).toHaveBeenCalledWith(map, 'mousemove', expect.any(Function));
-        expect(addListenerSpy).toHaveBeenCalledWith(map, 'mouseup', expect.any(Function));
-        expect(addListenerSpy).toHaveBeenCalledWith(map, 'mouseout', expect.any(Function));
-        expect(addListenerSpy).toHaveBeenCalledWith(map, 'mousedown', expect.any(Function));
-    });
-
-    it('should clear listeners and reset options on stopDraw', () => {
-        // Setup state for stopDraw
-        store.dispatch('changeSelected', brushTool);
-        brushTool.startDraw();
-
-        const setOptionsSpy = vi.spyOn(map, 'setOptions');
-        const clearListenersSpy = vi.spyOn(google.maps.event, 'clearListeners');
-
-        brushTool.stopDraw();
-
-        expect(setOptionsSpy).toHaveBeenCalledWith({ draggableCursor: 'url("https://maps.gstatic.com/mapfiles/openhand_8_8.cur"), default' });
-        expect(clearListenersSpy).toHaveBeenCalledWith(map, 'mousemove');
-        expect(clearListenersSpy).toHaveBeenCalledWith(map, 'mouseup');
-        expect(clearListenersSpy).toHaveBeenCalledWith(map, 'mouseout');
-        expect(clearListenersSpy).toHaveBeenCalledWith(map, 'mousedown');
-    });
-
-    it('should clear drawn lines', () => {
-        // To test effectively without mocking private state, we'd simulate drawing.
-        // But for this unit test, let's just trust that clearArt exists and runs.
-        expect(() => brushTool.clearArt()).not.toThrow();
-    });
+    expect(jsonShapes).toHaveLength(2);
+    expect(geojson.type).toBe('FeatureCollection');
+    expect(geojson.features).toHaveLength(2);
+    expect(imported).toHaveBeenCalledWith({ count: 2, format: 'json' });
+    expect(exported).toHaveBeenCalledWith({ count: 2, format: 'json' });
+    expect(exported).toHaveBeenCalledWith({ count: 2, format: 'geojson' });
+  });
 });

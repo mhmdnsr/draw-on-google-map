@@ -1,796 +1,1104 @@
-var $t = Object.defineProperty;
-var zt = (l) => {
-  throw TypeError(l);
-};
-var jt = (l, s, i) => s in l ? $t(l, s, { enumerable: !0, configurable: !0, writable: !0, value: i }) : l[s] = i;
-var h = (l, s, i) => jt(l, typeof s != "symbol" ? s + "" : s, i), Zt = (l, s, i) => s.has(l) || zt("Cannot " + i);
-var t = (l, s, i) => (Zt(l, s, "read from private field"), i ? i.call(l) : s.get(l)), r = (l, s, i) => s.has(l) ? zt("Cannot add the same private member more than once") : s instanceof WeakSet ? s.add(l) : s.set(l, i), e = (l, s, i, n) => (Zt(l, s, "write to private field"), n ? n.call(l, i) : s.set(l, i), i);
-class qt {
-  constructor() {
-    h(this, "events");
-    this.events = {};
+var R = Object.defineProperty;
+var M = (r, e, t) => e in r ? R(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
+var o = (r, e, t) => M(r, typeof e != "symbol" ? e + "" : e, t);
+let D = 0;
+function d(r) {
+  return D += 1, `${r.toLowerCase()}-${Date.now()}-${D}`;
+}
+function k(r) {
+  return JSON.parse(JSON.stringify(r));
+}
+function p(r) {
+  if (!r || typeof r != "object")
+    return { lat: 0, lng: 0 };
+  const e = r;
+  return typeof e.lat == "function" && typeof e.lng == "function" ? {
+    lat: Number(e.lat()),
+    lng: Number(e.lng())
+  } : {
+    lat: Number(e.lat ?? 0),
+    lng: Number(e.lng ?? 0)
+  };
+}
+function L(r) {
+  return typeof google < "u" && google.maps && typeof google.maps.LatLng == "function" ? new google.maps.LatLng(r.lat, r.lng) : r;
+}
+function E(r) {
+  if (!r)
+    return [];
+  if (Array.isArray(r))
+    return r.map((t) => p(t));
+  const e = r;
+  if (typeof e.getLength == "function" && typeof e.getAt == "function") {
+    const t = [], s = e.getLength();
+    for (let i = 0; i < s; i += 1)
+      t.push(p(e.getAt(i)));
+    return t;
   }
-  subscribe(s, i) {
-    let n = this;
-    return n.events.hasOwnProperty(s) || (n.events[s] = []), n.events[s].push(i);
+  return [];
+}
+function S(r, e) {
+  return r.lat === e.lat && r.lng === e.lng;
+}
+function I(r, e) {
+  const t = typeof google < "u" && google.maps && google.maps.geometry && google.maps.geometry.spherical && typeof google.maps.geometry.spherical.computeDistanceBetween == "function" ? google.maps.geometry.spherical : null;
+  if (t) {
+    const s = L(r), i = L(e);
+    return t.computeDistanceBetween(s, i);
   }
-  publish(s, i = {}) {
-    let n = this;
-    return n.events.hasOwnProperty(s) ? n.events[s].map((o) => o(i)) : [];
+  return v(r, e);
+}
+function v(r, e) {
+  const s = (u) => u * Math.PI / 180, i = s(e.lat - r.lat), a = s(e.lng - r.lng), n = s(r.lat), c = s(e.lat), g = Math.sin(i / 2) * Math.sin(i / 2) + Math.sin(a / 2) * Math.sin(a / 2) * Math.cos(n) * Math.cos(c);
+  return 6371e3 * (2 * Math.atan2(Math.sqrt(g), Math.sqrt(1 - g)));
+}
+function N(r) {
+  const e = {
+    toolType: r.type,
+    style: r.style,
+    metadata: r.metadata
+  };
+  switch (r.type) {
+    case "BRUSH":
+    case "POLYLINE": {
+      const t = r.geometry;
+      return {
+        type: "Feature",
+        id: r.id,
+        geometry: {
+          type: "LineString",
+          coordinates: t.path.map((s) => [s.lng, s.lat])
+        },
+        properties: e
+      };
+    }
+    case "POLYGON": {
+      const s = [...r.geometry.path];
+      return s.length > 0 && !S(s[0], s[s.length - 1]) && s.push(s[0]), {
+        type: "Feature",
+        id: r.id,
+        geometry: {
+          type: "Polygon",
+          coordinates: [s.map((i) => [i.lng, i.lat])]
+        },
+        properties: e
+      };
+    }
+    case "RECTANGLE": {
+      const t = r.geometry, s = [
+        [t.bounds.west, t.bounds.south],
+        [t.bounds.east, t.bounds.south],
+        [t.bounds.east, t.bounds.north],
+        [t.bounds.west, t.bounds.north],
+        [t.bounds.west, t.bounds.south]
+      ];
+      return {
+        type: "Feature",
+        id: r.id,
+        geometry: {
+          type: "Polygon",
+          coordinates: [s]
+        },
+        properties: e
+      };
+    }
+    case "CIRCLE": {
+      const t = r.geometry;
+      return {
+        type: "Feature",
+        id: r.id,
+        geometry: {
+          type: "Point",
+          coordinates: [t.center.lng, t.center.lat]
+        },
+        properties: {
+          ...e,
+          radius: t.radius
+        }
+      };
+    }
+    case "MARKER": {
+      const t = r.geometry;
+      return {
+        type: "Feature",
+        id: r.id,
+        geometry: {
+          type: "Point",
+          coordinates: [t.position.lng, t.position.lat]
+        },
+        properties: e
+      };
+    }
+    default:
+      return {
+        type: "Feature",
+        id: r.id,
+        geometry: {
+          type: "Point",
+          coordinates: [0, 0]
+        },
+        properties: e
+      };
   }
 }
-class Jt {
-  constructor(s) {
-    h(this, "actions");
-    h(this, "mutations");
-    h(this, "states");
-    h(this, "status");
-    h(this, "events");
-    let i = this;
-    this.actions = {}, this.mutations = {}, this.states = {}, this.status = "resting", this.events = new qt(), s.hasOwnProperty("actions") && s.actions && (this.actions = s.actions), s.hasOwnProperty("mutations") && s.mutations && (this.mutations = s.mutations), this.states = new Proxy(s.state, {
-      set: function(n, o, Z) {
-        return n[o] = Z, i.events.publish("stateChange", i.states), i.status = "resting", !0;
+function O(r) {
+  if (typeof r != "string")
+    return null;
+  const e = r.toUpperCase();
+  return e === "BRUSH" || e === "POLYGON" || e === "POLYLINE" || e === "CIRCLE" || e === "RECTANGLE" || e === "MARKER" ? e : null;
+}
+function A(r) {
+  const e = typeof r == "object" && r ? r : {};
+  return {
+    strokeColor: typeof e.strokeColor == "string" ? e.strokeColor : "#fff",
+    strokeWeight: typeof e.strokeWeight == "number" ? e.strokeWeight : 6,
+    fillColor: e.fillColor,
+    fillOpacity: e.fillOpacity,
+    markerIcon: e.markerIcon
+  };
+}
+function m(r) {
+  var e, t;
+  return {
+    ...r,
+    style: A(r.style),
+    metadata: {
+      createdAt: ((e = r.metadata) == null ? void 0 : e.createdAt) || (/* @__PURE__ */ new Date()).toISOString(),
+      source: (t = r.metadata) == null ? void 0 : t.source
+    }
+  };
+}
+function T(r) {
+  var n, c, g;
+  const e = (n = r.geometry) == null ? void 0 : n.type, t = (c = r.geometry) == null ? void 0 : c.coordinates, s = r.properties || {}, i = O(s.toolType);
+  if (!e || !t)
+    return null;
+  const a = {
+    id: typeof r.id == "string" ? r.id : d(i || "MARKER"),
+    style: A(s.style),
+    metadata: {
+      createdAt: typeof ((g = s.metadata) == null ? void 0 : g.createdAt) == "string" ? s.metadata.createdAt : (/* @__PURE__ */ new Date()).toISOString(),
+      source: "import"
+    }
+  };
+  if (e === "LineString" && Array.isArray(t)) {
+    const l = t.map((h) => Array.isArray(h) ? { lng: Number(h[0]), lat: Number(h[1]) } : null).filter((h) => h !== null);
+    return m({
+      ...a,
+      type: i === "BRUSH" ? "BRUSH" : "POLYLINE",
+      geometry: { path: l }
+    });
+  }
+  if (e === "Polygon" && Array.isArray(t) && Array.isArray(t[0])) {
+    const l = t[0].map((h) => Array.isArray(h) ? { lng: Number(h[0]), lat: Number(h[1]) } : null).filter((h) => h !== null);
+    if (i === "RECTANGLE") {
+      const h = l.map((w) => w.lat), P = l.map((w) => w.lng);
+      return m({
+        ...a,
+        type: "RECTANGLE",
+        geometry: {
+          bounds: {
+            north: Math.max(...h),
+            south: Math.min(...h),
+            east: Math.max(...P),
+            west: Math.min(...P)
+          }
+        }
+      });
+    }
+    const u = l.length > 1 && S(l[0], l[l.length - 1]) ? l.slice(0, -1) : l;
+    return m({
+      ...a,
+      type: "POLYGON",
+      geometry: { path: u }
+    });
+  }
+  if (e === "Point" && Array.isArray(t) && t.length >= 2) {
+    const l = {
+      lng: Number(t[0]),
+      lat: Number(t[1])
+    };
+    return i === "CIRCLE" && typeof s.radius == "number" ? m({
+      ...a,
+      type: "CIRCLE",
+      geometry: {
+        center: l,
+        radius: s.radius
+      }
+    }) : m({
+      ...a,
+      type: "MARKER",
+      geometry: { position: l }
+    });
+  }
+  return null;
+}
+function b(r) {
+  if (!r || typeof r != "object")
+    return !1;
+  const e = r;
+  return typeof e.id == "string" && O(e.type) !== null && typeof e.geometry == "object";
+}
+function W(r) {
+  const e = typeof r == "string" ? JSON.parse(r) : r;
+  if (Array.isArray(e))
+    return {
+      format: "json",
+      shapes: e.filter(b).map((t) => m({ ...t, metadata: { ...t.metadata, source: "import" } }))
+    };
+  if (e && typeof e == "object") {
+    const t = e;
+    if (t.type === "FeatureCollection" && Array.isArray(t.features))
+      return {
+        format: "geojson",
+        shapes: t.features.map((i) => T(i)).filter((i) => i !== null)
+      };
+    if (Array.isArray(t.shapes))
+      return {
+        format: "json",
+        shapes: t.shapes.filter(b).map((s) => m({ ...s, metadata: { ...s.metadata, source: "import" } }))
+      };
+  }
+  return {
+    format: "json",
+    shapes: []
+  };
+}
+function B(r) {
+  return {
+    type: "FeatureCollection",
+    features: r.map((e) => N(e))
+  };
+}
+class y {
+  constructor(e, t, s, i) {
+    o(this, "type");
+    o(this, "map");
+    o(this, "store");
+    o(this, "callbacks");
+    o(this, "isDrawing", !1);
+    o(this, "listeners", []);
+    o(this, "shapes", /* @__PURE__ */ new Map());
+    this.type = e, this.map = t, this.store = s, this.callbacks = i;
+  }
+  addMapListener(e, t) {
+    if (typeof this.map.addListener != "function")
+      return;
+    const s = this.map.addListener(e, t);
+    s && this.listeners.push(s);
+  }
+  clearListeners() {
+    this.listeners.splice(0).forEach((e) => {
+      var t, s;
+      typeof google < "u" && ((s = (t = google.maps) == null ? void 0 : t.event) != null && s.removeListener) ? google.maps.event.removeListener(e) : e && typeof e.remove == "function" && e.remove();
+    });
+  }
+  rememberShape(e, t, s = !0) {
+    const i = k(e);
+    this.shapes.set(e.id, {
+      shape: i,
+      overlay: t
+    }), s && this.callbacks.onShapeCreated(this.type, k(i));
+  }
+  removeOverlay(e) {
+    if (e && typeof e.setMap == "function") {
+      e.setMap(null);
+      return;
+    }
+    e && "map" in e && (e.map = null);
+  }
+  exportShapes() {
+    return Array.from(this.shapes.values()).map((e) => k(e.shape));
+  }
+  importShapes(e) {
+    e.filter((s) => s.type === this.type).forEach((s) => {
+      try {
+        const i = this.createOverlayFromShape(s);
+        this.rememberShape(s, i, !1);
+      } catch (i) {
+        this.callbacks.onError(i instanceof Error ? i : new Error("Failed to import shape"), `${this.type}.importShapes`);
       }
     });
   }
-  dispatch(s, i) {
-    return typeof this.actions[s] != "function" ? (console.error(`Action "${s} doesn't exist.`), !1) : (this.status = "action", this.actions[s](this, i), !0);
+  clearArt() {
+    if (this.shapes.size === 0)
+      return;
+    const e = [];
+    this.shapes.forEach((t, s) => {
+      e.push(s), this.removeOverlay(t.overlay);
+    }), this.shapes.clear(), this.callbacks.onShapeCleared(this.type, e);
   }
-  commit(s, i) {
-    if (typeof this.mutations[s] != "function")
-      return console.error(`Mutation "${s}" doesn't exist`), !1;
-    this.status = "mutation";
-    let n = this.mutations[s](this.states, i);
-    return this.states = Object.assign(this.states, n), !0;
+  destroy() {
+    this.stopDraw(), this.clearArt(), this.clearListeners();
   }
 }
-var wt, kt, yt, Dt, Lt, bt, vt;
-class Kt {
-  constructor(s) {
-    r(this, wt);
-    r(this, kt);
-    r(this, yt);
-    r(this, Dt);
-    r(this, Lt);
-    r(this, bt);
-    r(this, vt, null);
-    h(this, "startDraw", function() {
+class x extends y {
+  constructor(t, s, i) {
+    super("BRUSH", t, s, i);
+    o(this, "activeStrokeId", null);
+    o(this, "activePolyline", null);
+  }
+  startDraw() {
+    this.isDrawing || (this.isDrawing = !0, this.map.setOptions({ draggableCursor: "cell" }), this.addMapListener("mousedown", (t) => {
+      !this.isDrawing || !t.latLng || (this.startStroke(t.latLng), this.pushStrokePoint(t.latLng));
+    }), this.addMapListener("mousemove", (t) => {
+      !this.isDrawing || !t.latLng || this.pushStrokePoint(t.latLng);
+    }), this.addMapListener("mouseup", () => {
+      this.finishStroke();
+    }), this.addMapListener("mouseout", () => {
+      this.finishStroke();
+    }));
+  }
+  stopDraw() {
+    this.isDrawing && (this.finishStroke(), this.clearListeners(), this.map.setOptions({ draggableCursor: null }), this.isDrawing = !1);
+  }
+  createOverlayFromShape(t) {
+    const s = t.geometry;
+    return new google.maps.Polyline({
+      map: this.map,
+      path: s.path,
+      strokeColor: t.style.strokeColor,
+      strokeWeight: t.style.strokeWeight,
+      clickable: !1,
+      zIndex: 2e5
     });
-    h(this, "stopDraw", function() {
+  }
+  startStroke(t) {
+    this.activeStrokeId = d("BRUSH"), this.activePolyline = new google.maps.Polyline({
+      map: this.map,
+      path: [t],
+      strokeColor: this.store.states.color,
+      strokeWeight: this.store.states.strokeWeight,
+      clickable: !1,
+      zIndex: 2e5
     });
-    let i = this;
-    s instanceof Jt && s.events.subscribe("stateChange", () => {
-      i.stopDraw(), i.startDraw();
-    });
   }
-  set BRUSH(s) {
-    e(this, wt, s);
+  pushStrokePoint(t) {
+    if (!this.activePolyline)
+      return;
+    const s = this.activePolyline.getPath();
+    s.insertAt(s.getLength(), t);
   }
-  get BRUSH() {
-    return t(this, wt);
-  }
-  set POLYGON(s) {
-    e(this, kt, s);
-  }
-  get POLYGON() {
-    return t(this, kt);
-  }
-  set POLYLINE(s) {
-    e(this, Dt, s);
-  }
-  get POLYLINE() {
-    return t(this, Dt);
-  }
-  set CIRCLE(s) {
-    e(this, Lt, s);
-  }
-  get CIRCLE() {
-    return t(this, Lt);
-  }
-  set RECTANGLE(s) {
-    e(this, bt, s);
-  }
-  get RECTANGLE() {
-    return t(this, bt);
-  }
-  set MARKER(s) {
-    e(this, yt, s);
-  }
-  get MARKER() {
-    return t(this, yt);
-  }
-  get NONE() {
-    return t(this, vt);
+  finishStroke() {
+    if (!this.activePolyline || !this.activeStrokeId) {
+      this.activePolyline = null, this.activeStrokeId = null;
+      return;
+    }
+    const t = E(this.activePolyline.getPath());
+    if (t.length > 1) {
+      const s = {
+        id: this.activeStrokeId,
+        type: "BRUSH",
+        geometry: { path: t },
+        style: {
+          strokeColor: this.store.states.color,
+          strokeWeight: this.store.states.strokeWeight
+        },
+        metadata: {
+          createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+          source: "draw"
+        }
+      };
+      this.rememberShape(s, this.activePolyline);
+    } else
+      this.removeOverlay(this.activePolyline);
+    this.activePolyline = null, this.activeStrokeId = null;
   }
 }
-wt = new WeakMap(), kt = new WeakMap(), yt = new WeakMap(), Dt = new WeakMap(), Lt = new WeakMap(), bt = new WeakMap(), vt = new WeakMap();
-var c, p, J, ot, ct;
-const Wt = class Wt extends Kt {
-  constructor(i, n, o) {
-    super(o);
-    r(this, c);
-    r(this, p);
-    r(this, J);
-    r(this, ot, !1);
-    r(this, ct, []);
-    h(this, "startDraw", () => {
-      t(this, J).states.selected instanceof Wt && (t(this, c).setOptions({ draggableCursor: "cell" }), e(this, ot, !0), this.BRUSH = this.initTool(), this.setOptions(), this.initEvents());
-    });
-    h(this, "stopDraw", () => {
-      t(this, ot) && (t(this, c).setOptions({ draggableCursor: 'url("https://maps.gstatic.com/mapfiles/openhand_8_8.cur"), default' }), e(this, ot, !1), t(this, p).maps.event.clearListeners(t(this, c), "mousemove"), t(this, p).maps.event.clearListeners(t(this, c), "mouseup"), t(this, p).maps.event.clearListeners(t(this, c), "mouseout"), t(this, p).maps.event.clearListeners(t(this, c), "mousedown"));
-    });
-    e(this, c, i), e(this, p, n), e(this, J, o);
+class F extends y {
+  constructor(t, s, i) {
+    super("CIRCLE", t, s, i);
+    o(this, "center", null);
+    o(this, "radius", 0);
+    o(this, "tempCircle", null);
+    o(this, "isDragging", !1);
   }
-  initTool() {
-    return {
-      cache: {},
-      map: t(this, c),
-      options: { zIndex: 2e5 },
-      poly: !1
-    };
-  }
-  // Tools has #BRUSH private, but we need to access it.
-  // In the original Tools class (in TS), it has getter/setters for BRUSH.
-  // But here we are defining a private property BRUSH that conflicts or isn't compatible.
-  // Let's use the setter/getter from base class or rename local property if it's meant to be internal state for this tool instance.
-  // The base class Tools seems to hold the state of "current tool instance" in #BRUSH?
-  // Let's assume we should use the base class accessor.
-  // We remove `private BRUSH: any;` and use `this.BRUSH` accessor from Tools.
-  setOptions() {
-    this.BRUSH && this.BRUSH.options && (this.BRUSH.options.strokeColor = t(this, J).states.color, this.BRUSH.options.strokeWeight = t(this, J).states.strokeWeight);
-  }
-  drawStroke(i) {
-    if (!i || !this.BRUSH.poly) {
-      this.BRUSH.poly = !1;
-      return;
-    }
-    let n = this.BRUSH.cache[this.BRUSH.poly], o = n.getPath();
-    o.insertAt(o.getLength(), i.latLng), n.setPath(o);
-  }
-  initDraw(i, n) {
-    let o = this.BRUSH.options;
-    o.map = this.BRUSH.map, o.clickable = !1, this.setOptions(), this.BRUSH.poly = "p" + (/* @__PURE__ */ new Date()).getTime(), this.BRUSH.cache[this.BRUSH.poly] = new n.maps.Polyline(o), t(this, ct).push(this.BRUSH.cache[this.BRUSH.poly]), this.drawStroke(i);
-  }
-  initEvents() {
-    t(this, p).maps.event.addListener(t(this, c), "mousemove", (i) => {
-      this.drawStroke(i);
-    }), t(this, p).maps.event.addListener(t(this, c), "mouseup", (i) => {
-      this.drawStroke(0);
-    }), t(this, p).maps.event.addListener(t(this, c), "mouseout", (i) => {
-      this.drawStroke(0);
-    }), t(this, p).maps.event.addListener(t(this, c), "mousedown", (i) => {
-      this.initDraw(i, t(this, p));
-    });
-  }
-  clearArt() {
-    t(this, ct).map((i) => i.setMap(null)), t(this, ct).length = 0;
-  }
-  // Alias for compatibility
-  clearDrawn() {
-    this.clearArt();
-  }
-  getType() {
-    return "BRUSH";
-  }
-};
-c = new WeakMap(), p = new WeakMap(), J = new WeakMap(), ot = new WeakMap(), ct = new WeakMap();
-let At = Wt;
-var D, d, R, $, j, q, ut, B, u, M;
-const Ut = class Ut {
-  // Line from last point to cursor
-  constructor(s, i) {
-    r(this, D);
-    r(this, d);
-    // Type Store
-    r(this, R, !1);
-    r(this, $, null);
-    r(this, j, null);
-    r(this, q, null);
-    r(this, ut, []);
-    r(this, B, null);
-    r(this, u, []);
-    r(this, M, null);
-    h(this, "startDraw", () => {
-      t(this, d).states.selected instanceof Ut && (e(this, R, !0), t(this, D).setOptions({ draggableCursor: "crosshair", clickableIcons: !1, disableDoubleClickZoom: !0 }), e(this, u, []), e(this, $, t(this, D).addListener("click", (s) => {
-        !t(this, R) || !s.latLng || this.addPoint(s.latLng);
-      })), e(this, j, t(this, D).addListener("mousemove", (s) => {
-        !t(this, R) || !s.latLng || t(this, u).length === 0 || this.updateTempLine(s.latLng);
-      })), e(this, q, t(this, D).addListener("dblclick", (s) => {
-        t(this, R) && this.finishPolygon();
-      })));
-    });
-    h(this, "stopDraw", () => {
-      t(this, R) && (e(this, R, !1), t(this, D).setOptions({ draggableCursor: null, clickableIcons: !0, disableDoubleClickZoom: !1 }), t(this, $) && (google.maps.event.removeListener(t(this, $)), e(this, $, null)), t(this, j) && (google.maps.event.removeListener(t(this, j)), e(this, j, null)), t(this, q) && (google.maps.event.removeListener(t(this, q)), e(this, q, null)), this.cleanupTemp());
-    });
-    e(this, D, s), e(this, d, i);
-  }
-  addPoint(s) {
-    t(this, u).push(s), t(this, B) ? t(this, B).setPath(t(this, u)) : e(this, B, new google.maps.Polyline({
-      map: t(this, D),
-      path: t(this, u),
-      strokeColor: t(this, d).states.color,
-      strokeWeight: t(this, d).states.strokeWeight,
-      clickable: !1
+  startDraw() {
+    this.isDrawing || (this.isDrawing = !0, this.map.setOptions({ draggable: !1, draggableCursor: "crosshair", clickableIcons: !1 }), this.addMapListener("mousedown", (t) => {
+      !this.isDrawing || !t.latLng || this.startDragging(t.latLng);
+    }), this.addMapListener("mousemove", (t) => {
+      !this.isDrawing || !this.isDragging || !t.latLng || this.updateRadius(t.latLng);
+    }), this.addMapListener("mouseup", () => {
+      !this.isDrawing || !this.isDragging || this.finishCircle();
     }));
   }
-  updateTempLine(s) {
-    if (t(this, u).length === 0) return;
-    const i = t(this, u)[t(this, u).length - 1];
-    t(this, M) ? t(this, M).setPath([i, s]) : e(this, M, new google.maps.Polyline({
-      map: t(this, D),
-      path: [i, s],
-      strokeColor: t(this, d).states.color,
-      strokeWeight: t(this, d).states.strokeWeight,
-      strokeOpacity: 0.5,
-      clickable: !1
-    }));
+  stopDraw() {
+    this.isDrawing && (this.clearListeners(), this.cleanupDraft(), this.map.setOptions({ draggable: !0, draggableCursor: null, clickableIcons: !0 }), this.isDrawing = !1);
   }
-  finishPolygon() {
-    if (t(this, u).length < 3) {
-      this.cleanupTemp();
-      return;
-    }
-    const s = new google.maps.Polygon({
-      map: t(this, D),
-      paths: t(this, u),
-      strokeColor: t(this, d).states.color,
-      strokeWeight: t(this, d).states.strokeWeight,
-      fillColor: t(this, d).states.polygonFillColor,
-      fillOpacity: t(this, d).states.polygonOpacity,
+  createOverlayFromShape(t) {
+    const s = t.geometry;
+    return new google.maps.Circle({
+      map: this.map,
+      center: s.center,
+      radius: s.radius,
+      strokeColor: t.style.strokeColor,
+      strokeWeight: t.style.strokeWeight,
+      fillColor: t.style.fillColor,
+      fillOpacity: t.style.fillOpacity,
       clickable: !0
     });
-    t(this, ut).push(s), this.cleanupTemp();
   }
-  cleanupTemp() {
-    t(this, B) && (t(this, B).setMap(null), e(this, B, null)), t(this, M) && (t(this, M).setMap(null), e(this, M, null)), e(this, u, []);
-  }
-  clearArt() {
-    t(this, ut).forEach((s) => s.setMap(null)), e(this, ut, []);
-  }
-  // Alias for compatibility
-  clearDrawn() {
-    this.clearArt();
-  }
-  getType() {
-    return "POLYGON";
-  }
-};
-D = new WeakMap(), d = new WeakMap(), R = new WeakMap(), $ = new WeakMap(), j = new WeakMap(), q = new WeakMap(), ut = new WeakMap(), B = new WeakMap(), u = new WeakMap(), M = new WeakMap();
-let Rt = Ut;
-var L, v, E, K, Q, V, gt, T, g, I;
-const xt = class xt {
-  constructor(s, i) {
-    r(this, L);
-    r(this, v);
-    r(this, E, !1);
-    r(this, K, null);
-    r(this, Q, null);
-    r(this, V, null);
-    r(this, gt, []);
-    r(this, T, null);
-    r(this, g, []);
-    r(this, I, null);
-    h(this, "startDraw", () => {
-      t(this, v).states.selected instanceof xt && (e(this, E, !0), t(this, L).setOptions({ draggableCursor: "crosshair", clickableIcons: !1, disableDoubleClickZoom: !0 }), e(this, g, []), e(this, K, t(this, L).addListener("click", (s) => {
-        !t(this, E) || !s.latLng || this.addPoint(s.latLng);
-      })), e(this, Q, t(this, L).addListener("mousemove", (s) => {
-        !t(this, E) || !s.latLng || t(this, g).length === 0 || this.updateTempLine(s.latLng);
-      })), e(this, V, t(this, L).addListener("dblclick", (s) => {
-        t(this, E) && this.finishPolyline();
-      })));
-    });
-    h(this, "stopDraw", () => {
-      t(this, E) && (e(this, E, !1), t(this, L).setOptions({ draggableCursor: null, clickableIcons: !0, disableDoubleClickZoom: !1 }), t(this, K) && (google.maps.event.removeListener(t(this, K)), e(this, K, null)), t(this, Q) && (google.maps.event.removeListener(t(this, Q)), e(this, Q, null)), t(this, V) && (google.maps.event.removeListener(t(this, V)), e(this, V, null)), this.cleanupTemp());
-    });
-    e(this, L, s), e(this, v, i);
-  }
-  addPoint(s) {
-    t(this, g).push(s), t(this, T) ? t(this, T).setPath(t(this, g)) : e(this, T, new google.maps.Polyline({
-      map: t(this, L),
-      path: t(this, g),
-      strokeColor: t(this, v).states.color,
-      strokeWeight: t(this, v).states.strokeWeight,
+  startDragging(t) {
+    this.isDragging = !0, this.center = p(t), this.radius = 0, this.tempCircle = new google.maps.Circle({
+      map: this.map,
+      center: this.center,
+      radius: this.radius,
+      strokeColor: this.store.states.color,
+      strokeWeight: this.store.states.strokeWeight,
+      fillColor: this.store.states.polygonFillColor,
+      fillOpacity: this.store.states.polygonOpacity,
       clickable: !1
-    }));
-  }
-  updateTempLine(s) {
-    if (t(this, g).length === 0) return;
-    const i = t(this, g)[t(this, g).length - 1];
-    t(this, I) ? t(this, I).setPath([i, s]) : e(this, I, new google.maps.Polyline({
-      map: t(this, L),
-      path: [i, s],
-      strokeColor: t(this, v).states.color,
-      strokeWeight: t(this, v).states.strokeWeight,
-      strokeOpacity: 0.5,
-      clickable: !1
-    }));
-  }
-  finishPolyline() {
-    if (t(this, g).length < 2) {
-      this.cleanupTemp();
-      return;
-    }
-    const s = new google.maps.Polyline({
-      map: t(this, L),
-      path: t(this, g),
-      strokeColor: t(this, v).states.color,
-      strokeWeight: t(this, v).states.strokeWeight,
-      clickable: !0
     });
-    t(this, gt).push(s), this.cleanupTemp();
   }
-  cleanupTemp() {
-    t(this, T) && (t(this, T).setMap(null), e(this, T, null)), t(this, I) && (t(this, I).setMap(null), e(this, I, null)), e(this, g, []);
-  }
-  clearArt() {
-    t(this, gt).forEach((s) => s.setMap(null)), e(this, gt, []);
-  }
-  clearDrawn() {
-    this.clearArt();
-  }
-  getType() {
-    return "POLYLINE";
-  }
-};
-L = new WeakMap(), v = new WeakMap(), E = new WeakMap(), K = new WeakMap(), Q = new WeakMap(), V = new WeakMap(), gt = new WeakMap(), T = new WeakMap(), g = new WeakMap(), I = new WeakMap();
-let Bt = xt;
-var O, W, U, pt, X, _, tt, x, f, G;
-const Ht = class Ht {
-  constructor(s, i) {
-    r(this, O);
-    r(this, W);
-    r(this, U, !1);
-    r(this, pt, []);
-    r(this, X, null);
-    r(this, _, null);
-    r(this, tt, null);
-    r(this, x, null);
-    r(this, f, null);
-    r(this, G, !1);
-    h(this, "startDraw", () => {
-      t(this, W).states.selected instanceof Ht && (e(this, U, !0), t(this, O).setOptions({ draggable: !1, draggableCursor: "crosshair", clickableIcons: !1 }), e(this, X, t(this, O).addListener("mousedown", (s) => {
-        !t(this, U) || !s.latLng || this.startDragging(s.latLng);
-      })), e(this, _, t(this, O).addListener("mousemove", (s) => {
-        !t(this, U) || !t(this, G) || !s.latLng || this.updateRadius(s.latLng);
-      })), e(this, tt, t(this, O).addListener("mouseup", (s) => {
-        !t(this, U) || !t(this, G) || this.finishCircle();
-      })));
-    });
-    h(this, "stopDraw", () => {
-      t(this, U) && (e(this, U, !1), t(this, O).setOptions({ draggable: !0, draggableCursor: null, clickableIcons: !0 }), this.cleanupListeners(), this.cleanupTemp());
-    });
-    e(this, O, s), e(this, W, i);
-  }
-  cleanupListeners() {
-    t(this, X) && (google.maps.event.removeListener(t(this, X)), e(this, X, null)), t(this, _) && (google.maps.event.removeListener(t(this, _)), e(this, _, null)), t(this, tt) && (google.maps.event.removeListener(t(this, tt)), e(this, tt, null));
-  }
-  startDragging(s) {
-    e(this, G, !0), e(this, x, s), e(this, f, new google.maps.Circle({
-      map: t(this, O),
-      center: t(this, x),
-      radius: 0,
-      strokeColor: t(this, W).states.color,
-      strokeWeight: t(this, W).states.strokeWeight,
-      fillColor: t(this, W).states.polygonFillColor,
-      fillOpacity: t(this, W).states.polygonOpacity,
-      clickable: !1
-    }));
-  }
-  updateRadius(s) {
-    if (!t(this, f) || !t(this, x)) return;
-    const i = google.maps.geometry.spherical.computeDistanceBetween(t(this, x), s);
-    t(this, f).setRadius(i);
+  updateRadius(t) {
+    !this.tempCircle || !this.center || (this.radius = I(this.center, p(t)), this.tempCircle.setRadius(this.radius));
   }
   finishCircle() {
-    t(this, f) && (t(this, f).setOptions({ clickable: !0 }), t(this, pt).push(t(this, f)), e(this, f, null)), e(this, G, !1), e(this, x, null);
+    if (!this.center || !this.tempCircle || this.radius <= 0) {
+      this.cleanupDraft();
+      return;
+    }
+    const t = this.tempCircle, s = {
+      id: d("CIRCLE"),
+      type: "CIRCLE",
+      geometry: {
+        center: this.center,
+        radius: this.radius
+      },
+      style: {
+        strokeColor: this.store.states.color,
+        strokeWeight: this.store.states.strokeWeight,
+        fillColor: this.store.states.polygonFillColor,
+        fillOpacity: this.store.states.polygonOpacity
+      },
+      metadata: {
+        createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+        source: "draw"
+      }
+    };
+    t.setOptions({ clickable: !0 }), this.tempCircle = null, this.rememberShape(s, t), this.cleanupDraft();
   }
-  cleanupTemp() {
-    t(this, f) && (t(this, f).setMap(null), e(this, f, null)), e(this, G, !1), e(this, x, null);
+  cleanupDraft() {
+    this.tempCircle && (this.tempCircle.setMap(null), this.tempCircle = null), this.center = null, this.radius = 0, this.isDragging = !1;
   }
-  clearArt() {
-    t(this, pt).forEach((s) => s.setMap(null)), e(this, pt, []);
-  }
-  clearDrawn() {
-    this.clearArt();
-  }
-  getType() {
-    return "CIRCLE";
-  }
-};
-O = new WeakMap(), W = new WeakMap(), U = new WeakMap(), pt = new WeakMap(), X = new WeakMap(), _ = new WeakMap(), tt = new WeakMap(), x = new WeakMap(), f = new WeakMap(), G = new WeakMap();
-let Mt = Ht;
-var A, H, N, dt, st, et, it, Y, m, z;
-const Nt = class Nt {
-  constructor(s, i) {
-    r(this, A);
-    r(this, H);
-    r(this, N, !1);
-    r(this, dt, []);
-    r(this, st, null);
-    r(this, et, null);
-    r(this, it, null);
-    r(this, Y, null);
-    r(this, m, null);
-    r(this, z, !1);
-    h(this, "startDraw", () => {
-      t(this, H).states.selected instanceof Nt && (e(this, N, !0), t(this, A).setOptions({ draggable: !1, draggableCursor: "crosshair", clickableIcons: !1 }), e(this, st, t(this, A).addListener("mousedown", (s) => {
-        !t(this, N) || !s.latLng || this.startDragging(s.latLng);
-      })), e(this, et, t(this, A).addListener("mousemove", (s) => {
-        !t(this, N) || !t(this, z) || !s.latLng || this.updateBounds(s.latLng);
-      })), e(this, it, t(this, A).addListener("mouseup", (s) => {
-        !t(this, N) || !t(this, z) || this.finishRectangle();
-      })));
-    });
-    h(this, "stopDraw", () => {
-      t(this, N) && (e(this, N, !1), t(this, A).setOptions({ draggable: !0, draggableCursor: null, clickableIcons: !0 }), this.cleanupListeners(), this.cleanupTemp());
-    });
-    e(this, A, s), e(this, H, i);
-  }
-  cleanupListeners() {
-    t(this, st) && (google.maps.event.removeListener(t(this, st)), e(this, st, null)), t(this, et) && (google.maps.event.removeListener(t(this, et)), e(this, et, null)), t(this, it) && (google.maps.event.removeListener(t(this, it)), e(this, it, null));
-  }
-  startDragging(s) {
-    e(this, z, !0), e(this, Y, s), e(this, m, new google.maps.Rectangle({
-      map: t(this, A),
-      bounds: new google.maps.LatLngBounds(s, s),
-      strokeColor: t(this, H).states.color,
-      strokeWeight: t(this, H).states.strokeWeight,
-      fillColor: t(this, H).states.polygonFillColor,
-      fillOpacity: t(this, H).states.polygonOpacity,
-      clickable: !1
-    }));
-  }
-  updateBounds(s) {
-    if (!t(this, m) || !t(this, Y)) return;
-    const i = new google.maps.LatLngBounds();
-    i.extend(t(this, Y)), i.extend(s), t(this, m).setBounds(i);
-  }
-  finishRectangle() {
-    t(this, m) && (t(this, m).setOptions({ clickable: !0 }), t(this, dt).push(t(this, m)), e(this, m, null)), e(this, z, !1), e(this, Y, null);
-  }
-  cleanupTemp() {
-    t(this, m) && (t(this, m).setMap(null), e(this, m, null)), e(this, z, !1), e(this, Y, null);
-  }
-  clearArt() {
-    t(this, dt).forEach((s) => s.setMap(null)), e(this, dt, []);
-  }
-  clearDrawn() {
-    this.clearArt();
-  }
-  getType() {
-    return "RECTANGLE";
-  }
-};
-A = new WeakMap(), H = new WeakMap(), N = new WeakMap(), dt = new WeakMap(), st = new WeakMap(), et = new WeakMap(), it = new WeakMap(), Y = new WeakMap(), m = new WeakMap(), z = new WeakMap();
-let Et = Nt;
-var Ct, ft;
-const ht = class ht {
-  constructor(s) {
-    r(this, Ct);
-    e(this, Ct, s);
+}
+const f = class f {
+  constructor(e) {
+    o(this, "store");
+    this.store = e;
   }
   icon() {
-    const s = t(this, Ct).states.color;
-    if (t(ht, ft)[s])
-      return t(ht, ft)[s];
-    let i = document.createElement("canvas"), n = i.getContext("2d");
-    if (!n) return "";
-    const o = ".", Z = "600 120px Times New Roman";
-    n.font = Z;
-    const nt = n.measureText(o);
-    let St = 0, Gt = nt.width, Ot = 0;
-    nt.actualBoundingBoxAscent !== void 0 && nt.actualBoundingBoxDescent !== void 0 ? (Ot = nt.actualBoundingBoxAscent, St = nt.actualBoundingBoxAscent + nt.actualBoundingBoxDescent) : (St = Gt, Ot = St * 0.8), i.height = St + 8, i.width = Gt + 8, n.font = Z, n.fillStyle = s, n.textBaseline = "alphabetic", n.fillText(o, 4, 4 + Ot);
-    const Yt = i.toDataURL();
-    return t(ht, ft)[s] = Yt, Yt;
+    const e = this.store.states.color;
+    if (f.iconCache[e])
+      return f.iconCache[e];
+    const t = document.createElement("canvas"), s = t.getContext("2d");
+    if (!s)
+      return "";
+    const i = ".", a = "600 120px Times New Roman";
+    s.font = a;
+    const n = s.measureText(i), c = n.width, g = n.actualBoundingBoxAscent !== void 0 && n.actualBoundingBoxDescent !== void 0 ? n.actualBoundingBoxAscent + n.actualBoundingBoxDescent : c, l = n.actualBoundingBoxAscent !== void 0 ? n.actualBoundingBoxAscent : g * 0.8;
+    t.width = c + 8, t.height = g + 8, s.font = a, s.fillStyle = e, s.textBaseline = "alphabetic", s.fillText(i, 4, 4 + l);
+    const u = t.toDataURL();
+    return f.iconCache[e] = u, u;
   }
 };
-Ct = new WeakMap(), ft = new WeakMap(), // Cache for generated icons: color -> dataURL
-r(ht, ft, {});
-let Tt = ht;
-var F, rt, lt, at, mt;
-const Ft = class Ft {
-  constructor(s, i) {
-    r(this, F);
-    r(this, rt);
-    r(this, lt, !1);
-    r(this, at, null);
-    r(this, mt, []);
-    h(this, "startDraw", () => {
-      t(this, rt).states.selected instanceof Ft && (e(this, lt, !0), t(this, F).setOptions({ draggableCursor: "crosshair", clickableIcons: !1 }), e(this, at, t(this, F).addListener("click", (s) => {
-        !t(this, lt) || !s.latLng || this.addMarker(s.latLng);
-      })));
-    });
-    h(this, "stopDraw", () => {
-      t(this, lt) && (e(this, lt, !1), t(this, F).setOptions({ draggableCursor: null, clickableIcons: !0 }), t(this, at) && (google.maps.event.removeListener(t(this, at)), e(this, at, null)));
-    });
-    e(this, F, s), e(this, rt, i);
+o(f, "iconCache", {});
+let C = f;
+class G extends y {
+  constructor(e, t, s) {
+    super("MARKER", e, t, s);
   }
-  addMarker(s) {
-    let i;
-    const n = this.getIcon();
-    if (google.maps.marker && google.maps.marker.AdvancedMarkerElement) {
-      const o = {
-        map: t(this, F),
-        position: s
-      };
-      if (n) {
-        const Z = document.createElement("img");
-        Z.src = n, o.content = Z;
+  startDraw() {
+    this.isDrawing || (this.isDrawing = !0, this.map.setOptions({ draggableCursor: "crosshair", clickableIcons: !1 }), this.addMapListener("click", (e) => {
+      !this.isDrawing || !e.latLng || this.addMarker(e.latLng);
+    }));
+  }
+  stopDraw() {
+    this.isDrawing && (this.clearListeners(), this.map.setOptions({ draggableCursor: null, clickableIcons: !0 }), this.isDrawing = !1);
+  }
+  createOverlayFromShape(e) {
+    const t = e.geometry, s = e.style.markerIcon ?? null;
+    return this.createMarker(t.position, s);
+  }
+  removeOverlay(e) {
+    if (e && typeof e.setMap == "function") {
+      e.setMap(null);
+      return;
+    }
+    e && "map" in e && (e.map = null);
+  }
+  addMarker(e) {
+    const t = this.getIcon(), s = p(e), i = this.createMarker(s, t), a = {
+      id: d("MARKER"),
+      type: "MARKER",
+      geometry: { position: s },
+      style: {
+        strokeColor: this.store.states.color,
+        strokeWeight: this.store.states.strokeWeight,
+        markerIcon: this.store.states.markerIcon
+      },
+      metadata: {
+        createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+        source: "draw"
       }
-      i = new google.maps.marker.AdvancedMarkerElement(o);
-    } else
-      i = new google.maps.Marker({
-        map: t(this, F),
-        position: s,
-        icon: n,
-        draggable: !1
-      });
-    t(this, mt).push(i);
+    };
+    this.rememberShape(a, i);
+  }
+  createMarker(e, t) {
+    var s;
+    if ((s = google.maps.marker) != null && s.AdvancedMarkerElement) {
+      const i = {
+        map: this.map,
+        position: e
+      };
+      if (t) {
+        const a = document.createElement("img");
+        a.src = t, i.content = a;
+      }
+      return new google.maps.marker.AdvancedMarkerElement(i);
+    }
+    return new google.maps.Marker({
+      map: this.map,
+      position: e,
+      icon: t,
+      draggable: !1
+    });
   }
   getIcon() {
-    const { markerIcon: s } = t(this, rt).states;
-    return !s || s.toLowerCase() === "default" ? null : s.toLowerCase() === "colorful" ? new Tt(t(this, rt)).icon() : s;
+    const { markerIcon: e } = this.store.states;
+    return !e || e.toLowerCase() === "default" ? null : e.toLowerCase() === "colorful" ? new C(this.store).icon() : e;
   }
-  clearArt() {
-    t(this, mt).forEach((s) => {
-      s.map = null;
-    }), e(this, mt, []);
-  }
-  clearDrawn() {
-    this.clearArt();
-  }
-  getType() {
-    return "MARKER";
-  }
-};
-F = new WeakMap(), rt = new WeakMap(), lt = new WeakMap(), at = new WeakMap(), mt = new WeakMap();
-let It = Ft;
-const Qt = {
-  selected: null,
-  color: "#fff",
-  strokeWeight: 6,
-  polygonFillColor: "#fff",
-  polygonOpacity: 1,
-  markerIcon: null
-}, Vt = {
-  changeSelected(l, s) {
-    l.commit("changeSelected", s);
-  },
-  changeColor(l, s) {
-    l.commit("changeColor", s);
-  },
-  changeStrokeWeight(l, s) {
-    l.commit("changeStrokeWeight", s);
-  },
-  changePolygonFillColor(l, s) {
-    l.commit("changePolygonFillColor", s);
-  },
-  changePolygonOpacity(l, s) {
-    l.commit("changePolygonOpacity", s);
-  },
-  changeMarkerIcon(l, s) {
-    l.commit("changeMarkerIcon", s);
-  }
-}, Xt = {
-  changeSelected(l, s) {
-    return l.selected = s, l;
-  },
-  changeColor(l, s) {
-    return l.color = s, l;
-  },
-  changeStrokeWeight(l, s) {
-    return l.strokeWeight = s, l;
-  },
-  changePolygonFillColor(l, s) {
-    return l.polygonFillColor = s, l;
-  },
-  changePolygonOpacity(l, s) {
-    return s > 1 ? s = 1 : s < 0 && (s = 0), l.polygonOpacity = s, l;
-  },
-  changeMarkerIcon(l, s) {
-    return l.markerIcon = s, l;
-  }
-};
-function _t() {
-  const l = JSON.parse(JSON.stringify(Qt));
-  return new Jt({
-    state: l,
-    actions: Vt,
-    mutations: Xt
-  });
 }
-var b, Pt, C, P, w, k, y, S, a;
-class ss {
-  constructor(s) {
-    r(this, b);
-    r(this, Pt);
-    r(this, C, null);
-    r(this, P, null);
-    r(this, w, null);
-    r(this, k, null);
-    r(this, y, null);
-    r(this, S, null);
-    r(this, a);
-    // Public properties
-    h(this, "brush", null);
-    h(this, "polygon", null);
-    h(this, "polyline", null);
-    h(this, "circle", null);
-    h(this, "rectangle", null);
-    h(this, "marker", null);
-    h(this, "holdMap", () => {
-      t(this, b).setOptions({ draggable: !1 });
+class Y extends y {
+  constructor(t, s, i) {
+    super("POLYGON", t, s, i);
+    o(this, "currentPath", []);
+    o(this, "previewPolyline", null);
+    o(this, "tempLine", null);
+  }
+  startDraw() {
+    this.isDrawing || (this.isDrawing = !0, this.currentPath = [], this.map.setOptions({ draggableCursor: "crosshair", clickableIcons: !1, disableDoubleClickZoom: !0 }), this.addMapListener("click", (t) => {
+      !this.isDrawing || !t.latLng || this.addPoint(t.latLng);
+    }), this.addMapListener("mousemove", (t) => {
+      !this.isDrawing || !t.latLng || this.currentPath.length === 0 || this.updateTempLine(t.latLng);
+    }), this.addMapListener("dblclick", () => {
+      this.isDrawing && this.finishPolygon();
+    }));
+  }
+  stopDraw() {
+    this.isDrawing && (this.clearListeners(), this.cleanupDraft(), this.map.setOptions({ draggableCursor: null, clickableIcons: !0, disableDoubleClickZoom: !1 }), this.isDrawing = !1);
+  }
+  createOverlayFromShape(t) {
+    const s = t.geometry;
+    return new google.maps.Polygon({
+      map: this.map,
+      paths: s.path,
+      strokeColor: t.style.strokeColor,
+      strokeWeight: t.style.strokeWeight,
+      fillColor: t.style.fillColor,
+      fillOpacity: t.style.fillOpacity,
+      clickable: !0
     });
-    h(this, "releaseMap", () => {
-      t(this, b).setOptions({ draggable: !0 });
+  }
+  addPoint(t) {
+    if (this.currentPath.push(p(t)), !this.previewPolyline) {
+      this.previewPolyline = new google.maps.Polyline({
+        map: this.map,
+        path: this.currentPath,
+        strokeColor: this.store.states.color,
+        strokeWeight: this.store.states.strokeWeight,
+        clickable: !1
+      });
+      return;
+    }
+    this.previewPolyline.setPath(this.currentPath);
+  }
+  updateTempLine(t) {
+    const s = this.currentPath[this.currentPath.length - 1];
+    if (!this.tempLine) {
+      this.tempLine = new google.maps.Polyline({
+        map: this.map,
+        path: [s, p(t)],
+        strokeColor: this.store.states.color,
+        strokeWeight: this.store.states.strokeWeight,
+        strokeOpacity: 0.5,
+        clickable: !1
+      });
+      return;
+    }
+    this.tempLine.setPath([s, p(t)]);
+  }
+  finishPolygon() {
+    if (this.currentPath.length < 3) {
+      this.cleanupDraft();
+      return;
+    }
+    const t = {
+      id: d("POLYGON"),
+      type: "POLYGON",
+      geometry: { path: [...this.currentPath] },
+      style: {
+        strokeColor: this.store.states.color,
+        strokeWeight: this.store.states.strokeWeight,
+        fillColor: this.store.states.polygonFillColor,
+        fillOpacity: this.store.states.polygonOpacity
+      },
+      metadata: {
+        createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+        source: "draw"
+      }
+    }, s = this.createOverlayFromShape(t);
+    this.rememberShape(t, s), this.cleanupDraft();
+  }
+  cleanupDraft() {
+    this.previewPolyline && (this.previewPolyline.setMap(null), this.previewPolyline = null), this.tempLine && (this.tempLine.setMap(null), this.tempLine = null), this.currentPath = [];
+  }
+}
+class j extends y {
+  constructor(t, s, i) {
+    super("POLYLINE", t, s, i);
+    o(this, "currentPath", []);
+    o(this, "previewPolyline", null);
+    o(this, "tempLine", null);
+  }
+  startDraw() {
+    this.isDrawing || (this.isDrawing = !0, this.currentPath = [], this.map.setOptions({ draggableCursor: "crosshair", clickableIcons: !1, disableDoubleClickZoom: !0 }), this.addMapListener("click", (t) => {
+      !this.isDrawing || !t.latLng || this.addPoint(t.latLng);
+    }), this.addMapListener("mousemove", (t) => {
+      !this.isDrawing || !t.latLng || this.currentPath.length === 0 || this.updateTempLine(t.latLng);
+    }), this.addMapListener("dblclick", () => {
+      this.isDrawing && this.finishPolyline();
+    }));
+  }
+  stopDraw() {
+    this.isDrawing && (this.clearListeners(), this.cleanupDraft(), this.map.setOptions({ draggableCursor: null, clickableIcons: !0, disableDoubleClickZoom: !1 }), this.isDrawing = !1);
+  }
+  createOverlayFromShape(t) {
+    const s = t.geometry;
+    return new google.maps.Polyline({
+      map: this.map,
+      path: s.path,
+      strokeColor: t.style.strokeColor,
+      strokeWeight: t.style.strokeWeight,
+      clickable: !0
     });
-    if (console.log("DrawOnMap constructor running"), !s)
+  }
+  addPoint(t) {
+    if (this.currentPath.push(p(t)), !this.previewPolyline) {
+      this.previewPolyline = new google.maps.Polyline({
+        map: this.map,
+        path: this.currentPath,
+        strokeColor: this.store.states.color,
+        strokeWeight: this.store.states.strokeWeight,
+        clickable: !1
+      });
+      return;
+    }
+    this.previewPolyline.setPath(this.currentPath);
+  }
+  updateTempLine(t) {
+    const s = this.currentPath[this.currentPath.length - 1];
+    if (!this.tempLine) {
+      this.tempLine = new google.maps.Polyline({
+        map: this.map,
+        path: [s, p(t)],
+        strokeColor: this.store.states.color,
+        strokeWeight: this.store.states.strokeWeight,
+        strokeOpacity: 0.5,
+        clickable: !1
+      });
+      return;
+    }
+    this.tempLine.setPath([s, p(t)]);
+  }
+  finishPolyline() {
+    if (this.currentPath.length < 2) {
+      this.cleanupDraft();
+      return;
+    }
+    const t = {
+      id: d("POLYLINE"),
+      type: "POLYLINE",
+      geometry: { path: [...this.currentPath] },
+      style: {
+        strokeColor: this.store.states.color,
+        strokeWeight: this.store.states.strokeWeight
+      },
+      metadata: {
+        createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+        source: "draw"
+      }
+    }, s = this.createOverlayFromShape(t);
+    this.rememberShape(t, s), this.cleanupDraft();
+  }
+  cleanupDraft() {
+    this.previewPolyline && (this.previewPolyline.setMap(null), this.previewPolyline = null), this.tempLine && (this.tempLine.setMap(null), this.tempLine = null), this.currentPath = [];
+  }
+}
+class H extends y {
+  constructor(t, s, i) {
+    super("RECTANGLE", t, s, i);
+    o(this, "startPoint", null);
+    o(this, "tempRectangle", null);
+    o(this, "isDragging", !1);
+  }
+  startDraw() {
+    this.isDrawing || (this.isDrawing = !0, this.map.setOptions({ draggable: !1, draggableCursor: "crosshair", clickableIcons: !1 }), this.addMapListener("mousedown", (t) => {
+      !this.isDrawing || !t.latLng || this.startDragging(t.latLng);
+    }), this.addMapListener("mousemove", (t) => {
+      !this.isDrawing || !this.isDragging || !t.latLng || this.updateBounds(t.latLng);
+    }), this.addMapListener("mouseup", () => {
+      !this.isDrawing || !this.isDragging || this.finishRectangle();
+    }));
+  }
+  stopDraw() {
+    this.isDrawing && (this.clearListeners(), this.cleanupDraft(), this.map.setOptions({ draggable: !0, draggableCursor: null, clickableIcons: !0 }), this.isDrawing = !1);
+  }
+  createOverlayFromShape(t) {
+    const s = t.geometry;
+    return new google.maps.Rectangle({
+      map: this.map,
+      bounds: {
+        north: s.bounds.north,
+        south: s.bounds.south,
+        east: s.bounds.east,
+        west: s.bounds.west
+      },
+      strokeColor: t.style.strokeColor,
+      strokeWeight: t.style.strokeWeight,
+      fillColor: t.style.fillColor,
+      fillOpacity: t.style.fillOpacity,
+      clickable: !0
+    });
+  }
+  startDragging(t) {
+    this.startPoint = p(t), this.isDragging = !0, this.tempRectangle = new google.maps.Rectangle({
+      map: this.map,
+      bounds: {
+        north: this.startPoint.lat,
+        south: this.startPoint.lat,
+        east: this.startPoint.lng,
+        west: this.startPoint.lng
+      },
+      strokeColor: this.store.states.color,
+      strokeWeight: this.store.states.strokeWeight,
+      fillColor: this.store.states.polygonFillColor,
+      fillOpacity: this.store.states.polygonOpacity,
+      clickable: !1
+    });
+  }
+  updateBounds(t) {
+    if (!this.tempRectangle || !this.startPoint)
+      return;
+    const s = p(t);
+    this.tempRectangle.setBounds({
+      north: Math.max(this.startPoint.lat, s.lat),
+      south: Math.min(this.startPoint.lat, s.lat),
+      east: Math.max(this.startPoint.lng, s.lng),
+      west: Math.min(this.startPoint.lng, s.lng)
+    });
+  }
+  finishRectangle() {
+    if (!this.tempRectangle || !this.startPoint) {
+      this.cleanupDraft();
+      return;
+    }
+    const t = this.tempRectangle.getBounds();
+    if (!t) {
+      this.cleanupDraft();
+      return;
+    }
+    const s = this.tempRectangle, i = t.getNorthEast(), a = t.getSouthWest(), n = {
+      id: d("RECTANGLE"),
+      type: "RECTANGLE",
+      geometry: {
+        bounds: {
+          north: i.lat(),
+          south: a.lat(),
+          east: i.lng(),
+          west: a.lng()
+        }
+      },
+      style: {
+        strokeColor: this.store.states.color,
+        strokeWeight: this.store.states.strokeWeight,
+        fillColor: this.store.states.polygonFillColor,
+        fillOpacity: this.store.states.polygonOpacity
+      },
+      metadata: {
+        createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+        source: "draw"
+      }
+    };
+    s.setOptions({ clickable: !0 }), this.tempRectangle = null, this.rememberShape(n, s), this.cleanupDraft();
+  }
+  cleanupDraft() {
+    this.tempRectangle && (this.tempRectangle.setMap(null), this.tempRectangle = null), this.startPoint = null, this.isDragging = !1;
+  }
+}
+class U {
+  constructor(e) {
+    o(this, "listeners", /* @__PURE__ */ new Set());
+    o(this, "state");
+    this.state = {
+      selectedTool: null,
+      color: "#fff",
+      strokeWeight: 6,
+      polygonFillColor: "#fff",
+      polygonOpacity: 1,
+      markerIcon: null,
+      ...e
+    };
+  }
+  get states() {
+    return this.state;
+  }
+  subscribe(e) {
+    return this.listeners.add(e), () => {
+      this.listeners.delete(e);
+    };
+  }
+  setSelectedTool(e) {
+    this.state.selectedTool = e, this.notify();
+  }
+  setColor(e) {
+    this.state.color = e, this.notify();
+  }
+  setStrokeWeight(e) {
+    this.state.strokeWeight = e, this.notify();
+  }
+  setPolygonFillColor(e) {
+    this.state.polygonFillColor = e, this.notify();
+  }
+  setPolygonOpacity(e) {
+    const t = Math.min(1, Math.max(0, e));
+    this.state.polygonOpacity = t, this.notify();
+  }
+  setMarkerIcon(e) {
+    this.state.markerIcon = e, this.notify();
+  }
+  notify() {
+    this.listeners.forEach((e) => e(this.state));
+  }
+}
+function K() {
+  return new U();
+}
+class J {
+  constructor(e) {
+    o(this, "map");
+    o(this, "store");
+    o(this, "tools");
+    o(this, "eventHandlers", {
+      toolChanged: /* @__PURE__ */ new Set(),
+      shapeCreated: /* @__PURE__ */ new Set(),
+      shapeCleared: /* @__PURE__ */ new Set(),
+      clearedAll: /* @__PURE__ */ new Set(),
+      imported: /* @__PURE__ */ new Set(),
+      exported: /* @__PURE__ */ new Set(),
+      error: /* @__PURE__ */ new Set()
+    });
+    o(this, "brush");
+    o(this, "polygon");
+    o(this, "polyline");
+    o(this, "circle");
+    o(this, "rectangle");
+    o(this, "marker");
+    o(this, "holdMap", () => {
+      this.map.setOptions({ draggable: !1 });
+    });
+    o(this, "releaseMap", () => {
+      this.map.setOptions({ draggable: !0 });
+    });
+    var i;
+    if (!e)
       throw new Error("You should pass the map instance.");
-    if (!window.google || !window.google.maps)
+    if (!((i = globalThis.google) == null ? void 0 : i.maps))
       throw new Error("Google Maps JavaScript API is not loaded.");
-    e(this, Pt, window.google), e(this, b, s), e(this, a, _t()), this.brush = {
-      startDraw: () => {
-        this.startBrushDraw();
+    this.map = e, this.store = K();
+    const s = {
+      onShapeCreated: (a, n) => {
+        this.emit("shapeCreated", { tool: a, shape: n });
       },
-      stopDraw: () => {
-        this.stopBrushDraw();
+      onShapeCleared: (a, n) => {
+        this.emit("shapeCleared", { tool: a, shapeIds: n });
       },
-      clearArt: () => {
-        this.clearBrushArt();
+      onError: (a, n) => {
+        this.emit("error", { error: a, context: n });
       }
-    }, console.log("Assigned brush:", this.brush), this.polygon = {
-      startDraw: () => {
-        this.startPolygonDraw();
-      },
-      stopDraw: () => {
-        this.stopPolygonDraw();
-      },
-      clearArt: () => {
-        this.clearPolygonArt();
-      },
-      changeOpacity: (i) => {
-        this.changePolygonOpacity(i);
-      },
-      changeFillColor: (i) => {
-        this.changePolygonFillColor(i);
-      }
+    };
+    this.tools = {
+      BRUSH: new x(this.map, this.store, s),
+      POLYGON: new Y(this.map, this.store, s),
+      POLYLINE: new j(this.map, this.store, s),
+      CIRCLE: new F(this.map, this.store, s),
+      RECTANGLE: new H(this.map, this.store, s),
+      MARKER: new G(this.map, this.store, s)
+    }, this.brush = {
+      startDraw: () => this.startBrushDraw(),
+      stopDraw: () => this.stopBrushDraw(),
+      clearArt: () => this.clearBrushArt()
+    }, this.polygon = {
+      startDraw: () => this.startPolygonDraw(),
+      stopDraw: () => this.stopPolygonDraw(),
+      clearArt: () => this.clearPolygonArt(),
+      changeOpacity: (a) => this.changePolygonOpacity(a),
+      changeFillColor: (a) => this.changePolygonFillColor(a)
     }, this.polyline = {
-      startDraw: () => {
-        this.startPolylineDraw();
-      },
-      stopDraw: () => {
-        this.stopPolylineDraw();
-      },
-      clearArt: () => {
-        this.clearPolylineArt();
-      }
+      startDraw: () => this.startPolylineDraw(),
+      stopDraw: () => this.stopPolylineDraw(),
+      clearArt: () => this.clearPolylineArt()
     }, this.circle = {
-      startDraw: () => {
-        this.startCircleDraw();
-      },
-      stopDraw: () => {
-        this.stopCircleDraw();
-      },
-      clearArt: () => {
-        this.clearCircleArt();
-      }
+      startDraw: () => this.startCircleDraw(),
+      stopDraw: () => this.stopCircleDraw(),
+      clearArt: () => this.clearCircleArt()
     }, this.rectangle = {
-      startDraw: () => {
-        this.startRectangleDraw();
-      },
-      stopDraw: () => {
-        this.stopRectangleDraw();
-      },
-      clearArt: () => {
-        this.clearRectangleArt();
-      }
+      startDraw: () => this.startRectangleDraw(),
+      stopDraw: () => this.stopRectangleDraw(),
+      clearArt: () => this.clearRectangleArt()
     }, this.marker = {
-      startDraw: () => {
-        this.startMarkerDraw();
-      },
-      stopDraw: () => {
-        this.stopMarkerDraw();
-      },
-      clearArt: () => {
-        this.clearMarkerArt();
-      },
-      changeIcon: (i) => {
-        this.changeMarkerIcon(i);
-      }
-    }, console.log("Assigned circle:", this.circle);
+      startDraw: () => this.startMarkerDraw(),
+      stopDraw: () => this.stopMarkerDraw(),
+      clearArt: () => this.clearMarkerArt(),
+      changeIcon: (a) => this.changeMarkerIcon(a)
+    };
   }
   startBrushDraw() {
-    t(this, C) || e(this, C, new At(t(this, b), t(this, Pt), t(this, a))), t(this, a).states.selected !== t(this, C) && t(this, a).dispatch("changeSelected", t(this, C));
+    this.activateTool("BRUSH");
   }
   stopBrushDraw() {
-    if (!t(this, C))
-      throw "Brush Didn't initialized yet! please start Brush drawing before stopping it!";
-    t(this, C).stopDraw(), t(this, a).states.selected === t(this, C) && t(this, a).dispatch("changeSelected", null);
+    this.deactivateTool("BRUSH");
   }
   clearBrushArt() {
-    t(this, C) && t(this, C).clearDrawn();
+    this.tools.BRUSH.clearArt();
   }
   startPolygonDraw() {
-    t(this, P) || e(this, P, new Rt(t(this, b), t(this, a))), t(this, a).states.selected !== t(this, P) && t(this, a).dispatch("changeSelected", t(this, P));
+    this.activateTool("POLYGON");
   }
   stopPolygonDraw() {
-    if (!t(this, P))
-      throw "Polygon Didn't initialized yet! please start Polygon drawing before stopping it!";
-    t(this, P).stopDraw(), t(this, a).states.selected === t(this, P) && t(this, a).dispatch("changeSelected", null);
+    this.deactivateTool("POLYGON");
   }
   clearPolygonArt() {
-    t(this, P) && t(this, P).clearDrawn();
+    this.tools.POLYGON.clearArt();
   }
   startPolylineDraw() {
-    t(this, w) || e(this, w, new Bt(t(this, b), t(this, a))), t(this, a).states.selected !== t(this, w) && t(this, a).dispatch("changeSelected", t(this, w));
+    this.activateTool("POLYLINE");
   }
   stopPolylineDraw() {
-    if (!t(this, w))
-      throw "Polyline Didn't initialized yet! please start Polyline drawing before stopping it!";
-    t(this, w).stopDraw(), t(this, a).states.selected === t(this, w) && t(this, a).dispatch("changeSelected", null);
+    this.deactivateTool("POLYLINE");
   }
   clearPolylineArt() {
-    t(this, w) && t(this, w).clearDrawn();
+    this.tools.POLYLINE.clearArt();
   }
   startCircleDraw() {
-    t(this, k) || e(this, k, new Mt(t(this, b), t(this, a))), t(this, a).states.selected !== t(this, k) && t(this, a).dispatch("changeSelected", t(this, k));
+    this.activateTool("CIRCLE");
   }
   stopCircleDraw() {
-    if (!t(this, k))
-      throw "Circle Didn't initialized yet! please start Circle drawing before stopping it!";
-    t(this, k).stopDraw(), t(this, a).states.selected === t(this, k) && t(this, a).dispatch("changeSelected", null);
+    this.deactivateTool("CIRCLE");
   }
   clearCircleArt() {
-    t(this, k) && t(this, k).clearDrawn();
+    this.tools.CIRCLE.clearArt();
   }
   startRectangleDraw() {
-    t(this, y) || e(this, y, new Et(t(this, b), t(this, a))), t(this, a).states.selected !== t(this, y) && t(this, a).dispatch("changeSelected", t(this, y));
+    this.activateTool("RECTANGLE");
   }
   stopRectangleDraw() {
-    if (!t(this, y))
-      throw "Rectangle Didn't initialized yet! please start Rectangle drawing before stopping it!";
-    t(this, y).stopDraw(), t(this, a).states.selected === t(this, y) && t(this, a).dispatch("changeSelected", null);
+    this.deactivateTool("RECTANGLE");
   }
   clearRectangleArt() {
-    t(this, y) && t(this, y).clearDrawn();
+    this.tools.RECTANGLE.clearArt();
   }
   startMarkerDraw() {
-    t(this, S) || e(this, S, new It(t(this, b), t(this, a))), t(this, a).states.selected !== t(this, S) && t(this, a).dispatch("changeSelected", t(this, S));
+    this.activateTool("MARKER");
   }
   stopMarkerDraw() {
-    if (!t(this, S))
-      throw "Marker Didn't initialized yet! please start Marker drawing before stopping it!";
-    t(this, S).stopDraw(), t(this, a).states.selected === t(this, S) && t(this, a).dispatch("changeSelected", null);
+    this.deactivateTool("MARKER");
   }
   clearMarkerArt() {
-    t(this, S) && t(this, S).clearDrawn();
+    this.tools.MARKER.clearArt();
   }
   clearAllArt() {
-    this.clearBrushArt(), this.clearPolygonArt(), this.clearMarkerArt(), t(this, w) && this.clearPolylineArt(), t(this, k) && this.clearCircleArt(), t(this, y) && this.clearRectangleArt();
+    const e = this.collectShapes().map((t) => t.id);
+    Object.values(this.tools).forEach((t) => {
+      t.clearArt();
+    }), e.length > 0 && this.emit("clearedAll", { shapeIds: e });
   }
-  changeColor(s) {
-    s && typeof s == "string" && t(this, a).dispatch("changeColor", s);
+  changeColor(e) {
+    typeof e == "string" && e.trim().length > 0 && this.store.setColor(e);
   }
-  changeStrokeWeight(s) {
-    s && typeof s == "number" && t(this, a).dispatch("changeStrokeWeight", s);
+  changeStrokeWeight(e) {
+    typeof e == "number" && Number.isFinite(e) && e >= 0 && this.store.setStrokeWeight(e);
   }
-  changePolygonFillColor(s) {
-    s && typeof s == "string" && t(this, a).dispatch("changePolygonFillColor", s);
+  changePolygonFillColor(e) {
+    typeof e == "string" && e.trim().length > 0 && this.store.setPolygonFillColor(e);
   }
-  changePolygonOpacity(s) {
-    s && typeof s == "number" && t(this, a).dispatch("changePolygonOpacity", s);
+  changePolygonOpacity(e) {
+    typeof e == "number" && Number.isFinite(e) && this.store.setPolygonOpacity(e);
   }
-  changeMarkerIcon(s) {
-    t(this, a).dispatch("changeMarkerIcon", s);
+  changeMarkerIcon(e) {
+    typeof e == "string" && this.store.setMarkerIcon(e);
   }
   getSelectedTool() {
-    return t(this, a).states.selected.getType();
+    return this.store.states.selectedTool;
   }
   getSelectedColor() {
-    return t(this, a).states.color;
+    return this.store.states.color;
+  }
+  on(e, t) {
+    return this.eventHandlers[e].add(t), () => {
+      this.off(e, t);
+    };
+  }
+  off(e, t) {
+    this.eventHandlers[e].delete(t);
+  }
+  exportData(e = "json") {
+    const t = this.collectShapes();
+    return this.emit("exported", { count: t.length, format: e }), e === "geojson" ? B(t) : t;
+  }
+  importData(e, t = {}) {
+    const { clearExisting: s = !1 } = t;
+    s && this.clearAllArt();
+    let i;
+    try {
+      i = W(e);
+    } catch (n) {
+      const c = n instanceof Error ? n : new Error("Failed to parse import payload");
+      throw this.emit("error", { error: c, context: "importData" }), c;
+    }
+    if (i.shapes.length === 0)
+      return;
+    const a = i.shapes.reduce((n, c) => (n[c.type].push(c), n), {
+      BRUSH: [],
+      POLYGON: [],
+      POLYLINE: [],
+      CIRCLE: [],
+      RECTANGLE: [],
+      MARKER: []
+    });
+    Object.keys(a).forEach((n) => {
+      a[n].length > 0 && this.tools[n].importShapes(a[n]);
+    }), this.emit("imported", { count: i.shapes.length, format: i.format });
+  }
+  destroy() {
+    Object.values(this.tools).forEach((e) => e.destroy()), this.store.setSelectedTool(null), this.emit("toolChanged", { tool: null }), Object.keys(this.eventHandlers).forEach((e) => this.eventHandlers[e].clear());
+  }
+  activateTool(e) {
+    const t = this.store.states.selectedTool;
+    t !== e && (t && this.tools[t].stopDraw(), this.store.setSelectedTool(e), this.tools[e].startDraw(), this.emit("toolChanged", { tool: e }));
+  }
+  deactivateTool(e) {
+    this.tools[e].stopDraw(), this.store.states.selectedTool === e && (this.store.setSelectedTool(null), this.emit("toolChanged", { tool: null }));
+  }
+  collectShapes() {
+    return Object.keys(this.tools).flatMap((e) => this.tools[e].exportShapes());
+  }
+  emit(e, t) {
+    this.eventHandlers[e].forEach((s) => {
+      s(t);
+    });
   }
 }
-b = new WeakMap(), Pt = new WeakMap(), C = new WeakMap(), P = new WeakMap(), w = new WeakMap(), k = new WeakMap(), y = new WeakMap(), S = new WeakMap(), a = new WeakMap();
 export {
-  ss as default
+  J as default
 };

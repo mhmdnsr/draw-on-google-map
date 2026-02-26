@@ -16,7 +16,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
-import MapDraw from 'draw-on-google-maps';
+import MapDraw from 'draw-on-google-map';
 
 // Ensure Google Maps API is loaded externally
 

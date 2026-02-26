@@ -1,92 +1,121 @@
-import { Store } from './store/store';
+import { BaseTool } from './base-tool';
 import { ColorfulMarkerIcon } from './colorfulMarkerIcon';
+import { Store } from './store';
+import { DrawShape, ToolCallbacks } from './types';
+import { createShapeId, toLatLngLiteral } from './utils';
 
-export class Marker {
-    #map: google.maps.Map;
-    #store: Store;
-    #isSelected: boolean = false;
-    #listener: google.maps.MapsEventListener | null = null;
-    #drawn: any[] = [];
+export class Marker extends BaseTool {
+  constructor(map: google.maps.Map, store: Store, callbacks: ToolCallbacks) {
+    super('MARKER', map, store, callbacks);
+  }
 
-    constructor(map: google.maps.Map, store: Store) {
-        this.#map = map;
-        this.#store = store;
+  startDraw(): void {
+    if (this.isDrawing) {
+      return;
     }
 
-    startDraw = () => {
-        if (!(this.#store.states.selected instanceof Marker)) return;
+    this.isDrawing = true;
+    this.map.setOptions({ draggableCursor: 'crosshair', clickableIcons: false });
 
-        this.#isSelected = true;
-        this.#map.setOptions({ draggableCursor: 'crosshair', clickableIcons: false });
+    this.addMapListener('click', (event) => {
+      if (!this.isDrawing || !event.latLng) {
+        return;
+      }
 
-        this.#listener = this.#map.addListener('click', (e: google.maps.MapMouseEvent) => {
-            if (!this.#isSelected || !e.latLng) return;
-            this.addMarker(e.latLng);
-        });
+      this.addMarker(event.latLng);
+    });
+  }
+
+  stopDraw(): void {
+    if (!this.isDrawing) {
+      return;
     }
 
-    stopDraw = () => {
-        if (!this.#isSelected) return;
+    this.clearListeners();
+    this.map.setOptions({ draggableCursor: null, clickableIcons: true });
+    this.isDrawing = false;
+  }
 
-        this.#isSelected = false;
-        this.#map.setOptions({ draggableCursor: null, clickableIcons: true });
+  protected createOverlayFromShape(shape: DrawShape): unknown {
+    const geometry = shape.geometry as { position: google.maps.LatLngLiteral };
+    const markerIcon = shape.style.markerIcon ?? null;
 
-        if (this.#listener) {
-            google.maps.event.removeListener(this.#listener);
-            this.#listener = null;
-        }
+    return this.createMarker(geometry.position, markerIcon);
+  }
+
+  protected removeOverlay(overlay: unknown): void {
+    if (overlay && typeof (overlay as { setMap?: (map: google.maps.Map | null) => void }).setMap === 'function') {
+      (overlay as { setMap: (map: google.maps.Map | null) => void }).setMap(null);
+      return;
     }
 
-    private addMarker(position: google.maps.LatLng) {
-        let marker;
-        const icon = this.getIcon();
+    if (overlay && 'map' in (overlay as object)) {
+      (overlay as { map: google.maps.Map | null }).map = null;
+    }
+  }
 
-        if (google.maps.marker && google.maps.marker.AdvancedMarkerElement) {
-             const markerOptions: any = {
-                map: this.#map,
-                position: position,
-            };
+  private addMarker(position: google.maps.LatLng): void {
+    const icon = this.getIcon();
+    const literalPosition = toLatLngLiteral(position);
+    const marker = this.createMarker(literalPosition, icon);
 
-            if (icon) {
-                 const img = document.createElement('img');
-                 img.src = icon;
-                 markerOptions.content = img;
-            }
+    const shape: DrawShape = {
+      id: createShapeId('MARKER'),
+      type: 'MARKER',
+      geometry: { position: literalPosition },
+      style: {
+        strokeColor: this.store.states.color,
+        strokeWeight: this.store.states.strokeWeight,
+        markerIcon: this.store.states.markerIcon,
+      },
+      metadata: {
+        createdAt: new Date().toISOString(),
+        source: 'draw',
+      },
+    };
 
-            marker = new google.maps.marker.AdvancedMarkerElement(markerOptions);
-        } else {
-            marker = new google.maps.Marker({
-                map: this.#map,
-                position: position,
-                icon: icon,
-                draggable: false
-            });
-        }
+    this.rememberShape(shape, marker);
+  }
 
-        this.#drawn.push(marker);
+  private createMarker(position: google.maps.LatLngLiteral, icon: string | null): unknown {
+    if (google.maps.marker?.AdvancedMarkerElement) {
+      const markerOptions: {
+        map: google.maps.Map;
+        position: google.maps.LatLngLiteral;
+        content?: HTMLElement;
+      } = {
+        map: this.map,
+        position,
+      };
+
+      if (icon) {
+        const img = document.createElement('img');
+        img.src = icon;
+        markerOptions.content = img;
+      }
+
+      return new google.maps.marker.AdvancedMarkerElement(markerOptions);
     }
 
-    private getIcon(): string | null {
-        const { markerIcon } = this.#store.states;
-        if (!markerIcon || markerIcon.toLowerCase() === 'default') return null;
+    return new google.maps.Marker({
+      map: this.map,
+      position,
+      icon,
+      draggable: false,
+    });
+  }
 
-        if (markerIcon.toLowerCase() === 'colorful') {
-             return new ColorfulMarkerIcon(this.#store).icon();
-        }
+  private getIcon(): string | null {
+    const { markerIcon } = this.store.states;
 
-        return markerIcon;
+    if (!markerIcon || markerIcon.toLowerCase() === 'default') {
+      return null;
     }
 
-    clearArt() {
-        this.#drawn.forEach(marker => {
-            marker.map = null;
-        });
-        this.#drawn = [];
+    if (markerIcon.toLowerCase() === 'colorful') {
+      return new ColorfulMarkerIcon(this.store).icon();
     }
 
-    clearDrawn() {
-        this.clearArt();
-    }
-
-    getType() { return 'MARKER'; }
+    return markerIcon;
+  }
 }

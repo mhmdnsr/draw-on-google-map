@@ -1,10 +1,26 @@
 {
-  "name": "draw-on-google-map-dev",
+  "name": "draw-on-google-map",
   "version": "2.0.0",
-  "description": "draw-on-google-map is a JavaScript library that enable you to draw on google maps. You can draw (Polygons, Markers and free hand style)",
-  "main": "dist/draw-on-google-map.umd.js",
-  "module": "dist/draw-on-google-map.es.js",
-  "types": "dist/index.d.ts",
+  "description": "Draw polygons, markers, polylines, circles, rectangles, and freehand strokes on Google Maps.",
+  "main": "./dist/draw-on-google-map.umd.js",
+  "module": "./dist/draw-on-google-map.es.js",
+  "types": "./dist/types/index.d.ts",
+  "unpkg": "./dist/draw-on-google-map.umd.js",
+  "jsdelivr": "./dist/draw-on-google-map.umd.js",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/draw-on-google-map.es.js",
+      "require": "./dist/draw-on-google-map.umd.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "RELEASE_NOTES.md",
+    "LICENSE"
+  ],
   "author": "Mohamed Nasr",
   "homepage": "http://drawonmap.mohamed-nsr.com",
   "license": "MIT",
@@ -31,8 +47,11 @@
   "scripts": {
     "start": "vite",
     "dev": "vite",
-    "build": "tsc && vite build",
-    "test": "vitest run"
+    "build": "vite build && tsc --emitDeclarationOnly",
+    "test": "vitest run",
+    "audit": "npm audit --omit=dev --audit-level=high",
+    "prepublishOnly": "npm run test && npm run build"
   },
-  "type": "module"
+  "type": "module",
+  "sideEffects": false
 }

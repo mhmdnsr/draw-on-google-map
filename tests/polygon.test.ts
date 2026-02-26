@@ -1,62 +1,41 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Polygon } from '../src/draw-on-map/polygon-tool';
-import createStore, { Store } from '../src/draw-on-map/store/index';
+import { describe, expect, it } from 'vitest';
+import DrawOnMap from '../src/draw-on-map';
 
-describe('Polygon Tool', () => {
-    let map: google.maps.Map;
-    let store: Store;
-    let polygonTool: Polygon;
+describe('DrawOnMap Instance Isolation and Cleanup', () => {
+  it('keeps state isolated across instances', () => {
+    const mapOne: any = new google.maps.Map(document.createElement('div'), {});
+    const mapTwo: any = new google.maps.Map(document.createElement('div'), {});
 
-    beforeEach(() => {
-        // Create a mock map
-        map = new google.maps.Map(document.createElement('div'), {});
-        store = createStore();
-        polygonTool = new Polygon(map, store);
-    });
+    const drawOne = new DrawOnMap(mapOne);
+    const drawTwo = new DrawOnMap(mapTwo);
 
-    it('should initialize correctly', () => {
-        expect(polygonTool).toBeDefined();
-        expect(polygonTool.getType()).toBe('POLYGON');
-    });
+    drawOne.changeColor('#ff0000');
+    drawTwo.changeColor('#00ff00');
 
-    it('should set map options and add listeners on startDraw', () => {
-        // Mock startDraw behavior directly or simulate store selection if needed
-        // The startDraw method checks `this.#store.states.selected instanceof Polygon`
-        // We need to set the store state to make the check pass.
-        store.dispatch('changeSelected', polygonTool);
+    drawOne.marker.startDraw();
+    drawTwo.marker.startDraw();
 
-        // Spy on methods
-        const setOptionsSpy = vi.spyOn(map, 'setOptions');
-        const addListenerSpy = vi.spyOn(map, 'addListener');
+    mapOne.trigger('click', { latLng: new google.maps.LatLng(1, 1) });
+    mapTwo.trigger('click', { latLng: new google.maps.LatLng(2, 2) });
 
-        polygonTool.startDraw();
+    const oneShapes = drawOne.exportData('json') as any[];
+    const twoShapes = drawTwo.exportData('json') as any[];
 
-        expect(setOptionsSpy).toHaveBeenCalledWith({ draggableCursor: 'crosshair', clickableIcons: false, disableDoubleClickZoom: true });
-        expect(addListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
-        expect(addListenerSpy).toHaveBeenCalledWith('mousemove', expect.any(Function));
-        expect(addListenerSpy).toHaveBeenCalledWith('dblclick', expect.any(Function));
-    });
+    expect(oneShapes[0].style.strokeColor).toBe('#ff0000');
+    expect(twoShapes[0].style.strokeColor).toBe('#00ff00');
+  });
 
-    it('should clear listeners and reset options on stopDraw', () => {
-        // Setup state for stopDraw
-        store.dispatch('changeSelected', polygonTool);
-        polygonTool.startDraw();
+  it('destroy clears listeners and resets selection', () => {
+    const map: any = new google.maps.Map(document.createElement('div'), {});
+    const draw = new DrawOnMap(map);
 
-        const setOptionsSpy = vi.spyOn(map, 'setOptions');
-        const removeListenerSpy = vi.spyOn(google.maps.event, 'removeListener');
+    draw.marker.startDraw();
+    expect(draw.getSelectedTool()).toBe('MARKER');
+    expect(map.listenerCount('click')).toBeGreaterThan(0);
 
-        polygonTool.stopDraw();
+    draw.destroy();
 
-        expect(setOptionsSpy).toHaveBeenCalledWith({ draggableCursor: null, clickableIcons: true, disableDoubleClickZoom: false });
-        // It should remove click, mousemove, dblclick listeners
-        expect(removeListenerSpy).toHaveBeenCalledTimes(3);
-    });
-
-    it('should clean up temporary lines when stopping draw', () => {
-         store.dispatch('changeSelected', polygonTool);
-         polygonTool.startDraw();
-
-         // Mock internal state if possible or just ensure stopDraw runs without error
-         expect(() => polygonTool.stopDraw()).not.toThrow();
-    });
+    expect(draw.getSelectedTool()).toBeNull();
+    expect(map.listenerCount('click')).toBe(0);
+  });
 });

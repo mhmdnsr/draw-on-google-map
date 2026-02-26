@@ -3,175 +3,238 @@
 [![npm version](https://img.shields.io/npm/v/draw-on-google-map.svg?style=flat-square)](https://www.npmjs.com/package/draw-on-google-map)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A lightweight, dependency-free (except for Google Maps API) library to draw polygons, markers, polylines, circles, rectangles, and freehand brushes on Google Maps.
+`draw-on-google-map` is a framework-agnostic TypeScript library for drawing and managing overlays on Google Maps.
 
-This library provides a simple API to manage drawing tools, customize styles (colors, stroke weights, opacity), and handle multiple independent map instances.
+Supported tools:
+- Brush (freehand)
+- Polygon
+- Polyline
+- Circle
+- Rectangle
+- Marker
 
-## ✨ Features
-
-*   **Multiple Tools:** Polygon, Marker, Polyline, Circle, Rectangle, and Freehand Brush.
-*   **Customizable:** Easily change stroke color, fill color, stroke weight, and opacity.
-*   **Independent Instances:** Supports multiple map instances on the same page.
-*   **Framework Agnostic:** Works with Vanilla JS, React, Vue, Angular, etc.
-*   **TypeScript Support:** Written in TypeScript with full type definitions included.
-*   **Performance:** Optimized marker rendering using `TextMetrics` and caching.
-
-## 📦 Installation
+## Installation
 
 ```bash
 npm install draw-on-google-map
 ```
 
-or via CDN:
+## Google Maps Loading Options
+
+The library works with all common Google Maps JS loading patterns.
+
+### 1) Direct script tag
 
 ```html
-<script src="https://unpkg.com/draw-on-google-map/dist/draw-on-google-map.umd.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=marker,geometry"></script>
+<script src="https://unpkg.com/draw-on-google-map@latest/dist/draw-on-google-map.umd.js"></script>
+<script>
+  const map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: 30.0444, lng: 31.2357 },
+    zoom: 10,
+    mapId: 'YOUR_MAP_ID',
+  });
+
+  const draw = new DrawOnGoogleMap(map);
+</script>
 ```
 
-## 🚀 Usage
-
-### 1. Load Google Maps API
-
-Ensure the Google Maps JavaScript API is loaded in your project before initializing the library.
+### 2) Dynamic library import (`google.maps.importLibrary`)
 
 ```html
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
+<script>
+  (g => {
+    let h, a, k, p = 'The Google Maps JavaScript API', c = 'google', l = 'importLibrary', q = '__ib__', m = document, b = window;
+    b = b[c] || (b[c] = {});
+    const d = b.maps || (b.maps = {}), r = new Set(), e = new URLSearchParams();
+    const u = () => h || (h = new Promise(async (f, n) => {
+      a = m.createElement('script');
+      e.set('key', g.key);
+      e.set('v', g.v || 'weekly');
+      e.set('libraries', [...r] + '');
+      e.set('callback', c + '.maps.' + q);
+      a.src = `https://maps.${c}apis.com/maps/api/js?` + e;
+      d[q] = f;
+      a.onerror = () => n(Error(p + ' could not load.'));
+      m.head.append(a);
+    }));
+    d[l] ? console.warn(p + ' only loads once. Ignoring:', g) : d[l] = (f, ...n) => r.add(f) && u().then(() => d[l](f, ...n));
+  })({ key: 'YOUR_API_KEY' });
+</script>
+<script type="module">
+  import DrawOnMap from 'https://cdn.jsdelivr.net/npm/draw-on-google-map@latest/dist/draw-on-google-map.es.js';
+
+  const { Map } = await google.maps.importLibrary('maps');
+  await google.maps.importLibrary('geometry');
+  await google.maps.importLibrary('marker');
+
+  const map = new Map(document.getElementById('map'), {
+    center: { lat: 30.0444, lng: 31.2357 },
+    zoom: 10,
+    mapId: 'YOUR_MAP_ID',
+  });
+
+  const draw = new DrawOnMap(map);
+</script>
 ```
 
-### 2. Initialize the Library
+### 3) NPM `@googlemaps/js-api-loader`
 
-```javascript
+```ts
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import DrawOnMap from 'draw-on-google-map';
 
-const map = new google.maps.Map(document.getElementById("map"), {
-    center: { lat: -34.397, lng: 150.644 },
-    zoom: 8,
+setOptions({ key: process.env.GOOGLE_MAPS_API_KEY!, v: 'weekly' });
+
+const { Map } = await importLibrary('maps');
+await importLibrary('geometry');
+await importLibrary('marker');
+
+const map = new Map(document.getElementById('map') as HTMLElement, {
+  center: { lat: 30.0444, lng: 31.2357 },
+  zoom: 10,
+  mapId: 'YOUR_MAP_ID',
 });
 
 const draw = new DrawOnMap(map);
 ```
 
-### 3. Use Drawing Tools
+Notes:
+- `marker` is required for `AdvancedMarkerElement` support.
+- `geometry` is recommended for accurate circle radius calculations (library includes fallback when missing).
+- Use a valid `mapId` when advanced markers are expected.
 
-You can start and stop drawing using the exposed methods for each tool.
+## Bundled Files / CDN Hosting
 
-#### Brush (Freehand)
-```javascript
-draw.brush.startDraw();
-// ... user draws on map ...
-draw.brush.stopDraw();
-draw.brush.clearArt(); // Clears all brush strokes
-```
+Bundled files are published to npm and can be consumed from CDNs:
 
-#### Polygon
-```javascript
-draw.polygon.startDraw();
-// ... user clicks to add points, double click to finish ...
-draw.polygon.stopDraw();
-draw.polygon.clearArt();
-```
+- UMD: `https://unpkg.com/draw-on-google-map@latest/dist/draw-on-google-map.umd.js`
+- UMD: `https://cdn.jsdelivr.net/npm/draw-on-google-map@latest/dist/draw-on-google-map.umd.js`
+- ESM: `https://cdn.jsdelivr.net/npm/draw-on-google-map@latest/dist/draw-on-google-map.es.js`
 
-#### Marker
-```javascript
-draw.marker.startDraw();
-// ... user clicks to place markers ...
-draw.marker.stopDraw();
-draw.marker.changeIcon('https://path/to/icon.png'); // Change marker icon
-```
+## Quick Start (NPM)
 
-#### Other Tools
-Available tools: `polyline`, `circle`, `rectangle`. All follow the same `startDraw()`, `stopDraw()`, and `clearArt()` pattern.
-
-### 4. Customizing Styles
-
-You can change global drawing styles which apply to the currently selected tool and future drawings.
-
-```javascript
-// Change stroke color (for all tools)
-draw.changeColor('#FF0000');
-
-// Change stroke weight (for all tools)
-draw.changeStrokeWeight(5);
-
-// Change polygon fill color
-draw.changePolygonFillColor('#00FF00');
-
-// Change polygon fill opacity (0.0 to 1.0)
-draw.changePolygonOpacity(0.5);
-```
-
-## ⚛️ Framework Examples
-
-### React
-
-```tsx
-import React, { useEffect, useRef, useState } from 'react';
+```ts
 import DrawOnMap from 'draw-on-google-map';
 
-const MapComponent = () => {
-    const mapRef = useRef(null);
-    const [drawTools, setDrawTools] = useState(null);
+const map = new google.maps.Map(document.getElementById('map') as HTMLElement, {
+  center: { lat: 30.0444, lng: 31.2357 },
+  zoom: 10,
+  mapId: 'YOUR_MAP_ID',
+});
 
-    useEffect(() => {
-        if (window.google && mapRef.current) {
-            const map = new window.google.maps.Map(mapRef.current, {
-                center: { lat: 0, lng: 0 },
-                zoom: 4,
-            });
-            const tools = new DrawOnMap(map);
-            setDrawTools(tools);
-        }
-    }, []);
-
-    return (
-        <div>
-            <div ref={mapRef} style={{ height: '400px', width: '100%' }} />
-            <button onClick={() => drawTools?.brush.startDraw()}>Draw Brush</button>
-            <button onClick={() => drawTools?.brush.stopDraw()}>Stop Drawing</button>
-        </div>
-    );
-};
+const draw = new DrawOnMap(map);
+draw.changeColor('#ff4d4f');
+draw.changeStrokeWeight(4);
+draw.brush.startDraw();
 ```
 
-## 📖 API Reference
+## Tool API
 
-### `new DrawOnMap(map: google.maps.Map)`
-Creates a new instance of the drawing tools for the specific map.
+Each tool exposes:
+- `startDraw()`
+- `stopDraw()`
+- `clearArt()`
 
-### Properties
-*   `brush`: Brush tool instance.
-*   `polygon`: Polygon tool instance.
-*   `polyline`: Polyline tool instance.
-*   `circle`: Circle tool instance.
-*   `rectangle`: Rectangle tool instance.
-*   `marker`: Marker tool instance.
+Tool entrypoints:
+- `draw.brush`
+- `draw.polygon`
+- `draw.polyline`
+- `draw.circle`
+- `draw.rectangle`
+- `draw.marker`
 
-### Methods (Global)
-*   `changeColor(color: string)`: Sets the stroke color.
-*   `changeStrokeWeight(weight: number)`: Sets the stroke weight.
-*   `changePolygonFillColor(color: string)`: Sets the fill color for polygons.
-*   `changePolygonOpacity(opacity: number)`: Sets the fill opacity (0-1).
-*   `changeMarkerIcon(icon: string)`: Sets the icon URL for markers.
-*   `getSelectedTool()`: Returns the type of the currently active tool.
-*   `getSelectedColor()`: Returns the current color.
-*   `clearAllArt()`: Clears drawings from all tools.
+Tool-specific methods:
+- `draw.polygon.changeFillColor(color: string)`
+- `draw.polygon.changeOpacity(opacity: number)`
+- `draw.marker.changeIcon(icon: string)`
 
-### Methods (Per Tool)
-Each tool (brush, polygon, etc.) has:
-*   `startDraw()`: Activates the tool.
-*   `stopDraw()`: Deactivates the tool.
-*   `clearArt()`: Clears drawings created by this specific tool.
+## Global API
 
-## 🤝 Contributing
+- `changeColor(color: string)`
+- `changeStrokeWeight(weight: number)`
+- `changePolygonFillColor(color: string)`
+- `changePolygonOpacity(opacity: number)`
+- `changeMarkerIcon(icon: string)`
+- `getSelectedTool(): 'BRUSH' | 'POLYGON' | 'POLYLINE' | 'CIRCLE' | 'RECTANGLE' | 'MARKER' | null`
+- `getSelectedColor(): string`
+- `clearAllArt()`
+- `destroy()`
 
-Contributions are welcome! Please follow these steps:
+## Events API
 
-1.  Fork the repository.
-2.  Create a new branch (`git checkout -b feature/amazing-feature`).
-3.  Commit your changes (`git commit -m 'Add some amazing feature'`).
-4.  Push to the branch (`git push origin feature/amazing-feature`).
-5.  Open a Pull Request.
+```ts
+const unsubscribe = draw.on('shapeCreated', ({ tool, shape }) => {
+  console.log(tool, shape.id);
+});
 
-## 📄 License
+unsubscribe();
+```
 
-This project is licensed under the MIT License.
+Available events:
+- `toolChanged`
+- `shapeCreated`
+- `shapeCleared`
+- `clearedAll`
+- `imported`
+- `exported`
+- `error`
+
+You can also remove listeners with `draw.off(eventName, handler)`.
+
+## Serialization API
+
+```ts
+const json = draw.exportData('json');
+const geojson = draw.exportData('geojson');
+
+draw.importData(json);
+draw.importData(geojson, { clearExisting: true });
+```
+
+Accepted import payloads:
+- `DrawShape[]`
+- `{ shapes: DrawShape[] }`
+- `GeoJSON FeatureCollection`
+
+## Framework Usage
+
+The package works with Vanilla JS, React, Vue, Angular, and any environment where Google Maps API is loaded.
+
+See examples in:
+- `examples/vanilla`
+- `examples/react`
+- `examples/vue`
+- `examples/angular`
+
+## Migration from v1.0.4 to v2.0.0
+
+Breaking changes:
+- Internal architecture was rewritten in TypeScript.
+- The legacy DrawingManager-based flow is no longer used.
+- New tools are available (`polyline`, `circle`, `rectangle`).
+
+Compatibility notes:
+- Existing public entrypoints (`draw.brush.startDraw()`, `draw.polygon...`, `draw.marker...`) are preserved.
+- `getSelectedTool()` now safely returns `null` when no tool is active.
+
+## Security Best Practices
+
+- Never commit real API keys, tokens, certificates, or `.env` files.
+- Use environment variables and CI/CD secret managers for all credentials.
+- Run `npm run audit` before publishing.
+
+## Troubleshooting
+
+- `Google Maps JavaScript API is not loaded.`
+: Ensure the API is loaded before `new DrawOnMap(map)`.
+- Circle radius not accurate
+: Include `geometry` in your loaded libraries.
+- Markers do not render as expected
+: Include `marker` and use a valid `mapId`.
+- Multiple map instances influence each other
+: Use one `DrawOnMap` instance per map container.
+
+## License
+
+MIT

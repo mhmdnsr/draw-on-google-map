@@ -1,66 +1,75 @@
-import { PubSub } from './pub-sub';
+import { DrawToolType } from '../types';
 
-export interface State {
-    [key: string]: any;
+export interface DrawStoreState {
+  selectedTool: DrawToolType | null;
+  color: string;
+  strokeWeight: number;
+  polygonFillColor: string;
+  polygonOpacity: number;
+  markerIcon: string | null;
 }
 
-export interface StoreParams {
-    state: State;
-    actions?: { [key: string]: Function };
-    mutations?: { [key: string]: Function };
-}
+export type StoreListener = (state: DrawStoreState) => void;
 
 export class Store {
-    actions: { [key: string]: Function };
-    mutations: { [key: string]: Function };
-    states: State;
-    status: string;
-    events: PubSub;
+  private readonly listeners: Set<StoreListener> = new Set();
+  private state: DrawStoreState;
 
-    constructor(params: StoreParams) {
-        let self = this;
+  constructor(initialState?: Partial<DrawStoreState>) {
+    this.state = {
+      selectedTool: null,
+      color: '#fff',
+      strokeWeight: 6,
+      polygonFillColor: '#fff',
+      polygonOpacity: 1,
+      markerIcon: null,
+      ...initialState,
+    };
+  }
 
-        this.actions = {};
-        this.mutations = {};
-        this.states = {};
-        this.status = 'resting';
-        this.events = new PubSub();
+  get states(): DrawStoreState {
+    return this.state;
+  }
 
-        if (params.hasOwnProperty('actions') && params.actions) {
-            this.actions = params.actions;
-        }
+  subscribe(listener: StoreListener): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
 
-        if (params.hasOwnProperty('mutations') && params.mutations) {
-            this.mutations = params.mutations;
-        }
-        this.states = new Proxy(params.state, {
-            set: function(state, key: string, value: any) {
-                state[key] = value;
-                self.events.publish('stateChange', self.states);
-                self.status = 'resting';
-                return true;
-            }
-        });
-    }
+  setSelectedTool(tool: DrawToolType | null): void {
+    this.state.selectedTool = tool;
+    this.notify();
+  }
 
-    dispatch(actionKey: string, payload: any) {
-        if(typeof this.actions[actionKey] !== 'function') {
-            console.error(`Action "${actionKey} doesn't exist.`);
-            return false;
-        }
-        this.status = 'action';
-        this.actions[actionKey](this, payload);
-        return true;
-    }
+  setColor(color: string): void {
+    this.state.color = color;
+    this.notify();
+  }
 
-    commit(mutationKey: string, payload: any) {
-        if(typeof this.mutations[mutationKey] !== 'function') {
-            console.error(`Mutation "${mutationKey}" doesn't exist`);
-            return false;
-        }
-        this.status = 'mutation';
-        let newState = this.mutations[mutationKey](this.states, payload);
-        this.states = Object.assign(this.states, newState);
-        return true;
-    }
+  setStrokeWeight(weight: number): void {
+    this.state.strokeWeight = weight;
+    this.notify();
+  }
+
+  setPolygonFillColor(color: string): void {
+    this.state.polygonFillColor = color;
+    this.notify();
+  }
+
+  setPolygonOpacity(opacity: number): void {
+    const clamped = Math.min(1, Math.max(0, opacity));
+    this.state.polygonOpacity = clamped;
+    this.notify();
+  }
+
+  setMarkerIcon(icon: string | null): void {
+    this.state.markerIcon = icon;
+    this.notify();
+  }
+
+  private notify(): void {
+    this.listeners.forEach((listener) => listener(this.state));
+  }
 }

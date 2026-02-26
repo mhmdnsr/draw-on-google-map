@@ -1,146 +1,146 @@
-import { Store } from './store/store';
+import { BaseTool } from './base-tool';
+import { Store } from './store';
+import { DrawShape, ToolCallbacks } from './types';
+import { createShapeId, toLatLngLiteral } from './utils';
 
-export class Polygon {
-    #map: google.maps.Map;
-    #store: Store; // Type Store
-    #isSelected: boolean = false;
-    #listener: google.maps.MapsEventListener | null = null;
-    #moveListener: google.maps.MapsEventListener | null = null;
-    #dblClickListener: google.maps.MapsEventListener | null = null;
-    #drawn: google.maps.Polygon[] = [];
+export class Polygon extends BaseTool {
+  private currentPath: google.maps.LatLngLiteral[] = [];
+  private previewPolyline: google.maps.Polyline | null = null;
+  private tempLine: google.maps.Polyline | null = null;
 
-    #currentPolyline: google.maps.Polyline | null = null;
-    #path: google.maps.LatLng[] = [];
-    #tempLine: google.maps.Polyline | null = null; // Line from last point to cursor
+  constructor(map: google.maps.Map, store: Store, callbacks: ToolCallbacks) {
+    super('POLYGON', map, store, callbacks);
+  }
 
-    constructor(map: google.maps.Map, store: Store) {
-        this.#map = map;
-        this.#store = store;
+  startDraw(): void {
+    if (this.isDrawing) {
+      return;
     }
 
-    startDraw = () => {
-        if (!(this.#store.states.selected instanceof Polygon)) return;
+    this.isDrawing = true;
+    this.currentPath = [];
+    this.map.setOptions({ draggableCursor: 'crosshair', clickableIcons: false, disableDoubleClickZoom: true });
 
-        this.#isSelected = true;
-        this.#map.setOptions({ draggableCursor: 'crosshair', clickableIcons: false, disableDoubleClickZoom: true });
+    this.addMapListener('click', (event) => {
+      if (!this.isDrawing || !event.latLng) {
+        return;
+      }
+      this.addPoint(event.latLng);
+    });
 
-        this.#path = [];
+    this.addMapListener('mousemove', (event) => {
+      if (!this.isDrawing || !event.latLng || this.currentPath.length === 0) {
+        return;
+      }
+      this.updateTempLine(event.latLng);
+    });
 
-        this.#listener = this.#map.addListener('click', (e: google.maps.MapMouseEvent) => {
-             if (!this.#isSelected || !e.latLng) return;
-             this.addPoint(e.latLng);
-        });
+    this.addMapListener('dblclick', () => {
+      if (!this.isDrawing) {
+        return;
+      }
+      this.finishPolygon();
+    });
+  }
 
-        this.#moveListener = this.#map.addListener('mousemove', (e: google.maps.MapMouseEvent) => {
-            if (!this.#isSelected || !e.latLng || this.#path.length === 0) return;
-            this.updateTempLine(e.latLng);
-        });
-
-        this.#dblClickListener = this.#map.addListener('dblclick', (_e: google.maps.MapMouseEvent) => {
-             if (!this.#isSelected) return;
-             this.finishPolygon();
-        });
+  stopDraw(): void {
+    if (!this.isDrawing) {
+      return;
     }
 
-    stopDraw = () => {
-        if (!this.#isSelected) return;
+    this.clearListeners();
+    this.cleanupDraft();
+    this.map.setOptions({ draggableCursor: null, clickableIcons: true, disableDoubleClickZoom: false });
+    this.isDrawing = false;
+  }
 
-        this.#isSelected = false;
-        this.#map.setOptions({ draggableCursor: null, clickableIcons: true, disableDoubleClickZoom: false });
+  protected createOverlayFromShape(shape: DrawShape): unknown {
+    const geometry = shape.geometry as { path: google.maps.LatLngLiteral[] };
 
-        if (this.#listener) {
-            google.maps.event.removeListener(this.#listener);
-            this.#listener = null;
-        }
-        if (this.#moveListener) {
-             google.maps.event.removeListener(this.#moveListener);
-             this.#moveListener = null;
-        }
-        if (this.#dblClickListener) {
-             google.maps.event.removeListener(this.#dblClickListener);
-             this.#dblClickListener = null;
-        }
+    return new google.maps.Polygon({
+      map: this.map,
+      paths: geometry.path,
+      strokeColor: shape.style.strokeColor,
+      strokeWeight: shape.style.strokeWeight,
+      fillColor: shape.style.fillColor,
+      fillOpacity: shape.style.fillOpacity,
+      clickable: true,
+    });
+  }
 
-        this.cleanupTemp();
+  private addPoint(latLng: google.maps.LatLng): void {
+    this.currentPath.push(toLatLngLiteral(latLng));
+
+    if (!this.previewPolyline) {
+      this.previewPolyline = new google.maps.Polyline({
+        map: this.map,
+        path: this.currentPath,
+        strokeColor: this.store.states.color,
+        strokeWeight: this.store.states.strokeWeight,
+        clickable: false,
+      });
+      return;
     }
 
-    private addPoint(latLng: google.maps.LatLng) {
-        this.#path.push(latLng);
+    this.previewPolyline.setPath(this.currentPath);
+  }
 
-        if (!this.#currentPolyline) {
-            this.#currentPolyline = new google.maps.Polyline({
-                map: this.#map,
-                path: this.#path,
-                strokeColor: this.#store.states.color,
-                strokeWeight: this.#store.states.strokeWeight,
-                clickable: false
-            });
-        } else {
-            this.#currentPolyline.setPath(this.#path);
-        }
+  private updateTempLine(cursorLatLng: google.maps.LatLng): void {
+    const lastPoint = this.currentPath[this.currentPath.length - 1];
+
+    if (!this.tempLine) {
+      this.tempLine = new google.maps.Polyline({
+        map: this.map,
+        path: [lastPoint, toLatLngLiteral(cursorLatLng)],
+        strokeColor: this.store.states.color,
+        strokeWeight: this.store.states.strokeWeight,
+        strokeOpacity: 0.5,
+        clickable: false,
+      });
+      return;
     }
 
-    private updateTempLine(cursorLatLng: google.maps.LatLng) {
-        if (this.#path.length === 0) return;
-        const lastPoint = this.#path[this.#path.length - 1];
+    this.tempLine.setPath([lastPoint, toLatLngLiteral(cursorLatLng)]);
+  }
 
-        if (!this.#tempLine) {
-            this.#tempLine = new google.maps.Polyline({
-                map: this.#map,
-                path: [lastPoint, cursorLatLng],
-                strokeColor: this.#store.states.color,
-                strokeWeight: this.#store.states.strokeWeight,
-                strokeOpacity: 0.5,
-                clickable: false
-            });
-        } else {
-            this.#tempLine.setPath([lastPoint, cursorLatLng]);
-        }
+  private finishPolygon(): void {
+    if (this.currentPath.length < 3) {
+      this.cleanupDraft();
+      return;
     }
 
-    private finishPolygon() {
-        if (this.#path.length < 3) {
-            this.cleanupTemp();
-            return; // Not enough points
-        }
+    const shape: DrawShape = {
+      id: createShapeId('POLYGON'),
+      type: 'POLYGON',
+      geometry: { path: [...this.currentPath] },
+      style: {
+        strokeColor: this.store.states.color,
+        strokeWeight: this.store.states.strokeWeight,
+        fillColor: this.store.states.polygonFillColor,
+        fillOpacity: this.store.states.polygonOpacity,
+      },
+      metadata: {
+        createdAt: new Date().toISOString(),
+        source: 'draw',
+      },
+    };
 
-        const polygon = new google.maps.Polygon({
-            map: this.#map,
-            paths: this.#path,
-            strokeColor: this.#store.states.color,
-            strokeWeight: this.#store.states.strokeWeight,
-            fillColor: this.#store.states.polygonFillColor,
-            fillOpacity: this.#store.states.polygonOpacity,
-            clickable: true
-        });
+    const polygon = this.createOverlayFromShape(shape);
+    this.rememberShape(shape, polygon);
+    this.cleanupDraft();
+  }
 
-        this.#drawn.push(polygon);
-
-        // Reset path for the next polygon (Drawing Manager allows multiple polygons sequentially)
-        this.cleanupTemp();
+  private cleanupDraft(): void {
+    if (this.previewPolyline) {
+      this.previewPolyline.setMap(null);
+      this.previewPolyline = null;
     }
 
-    private cleanupTemp() {
-        if (this.#currentPolyline) {
-            this.#currentPolyline.setMap(null);
-            this.#currentPolyline = null;
-        }
-        if (this.#tempLine) {
-            this.#tempLine.setMap(null);
-            this.#tempLine = null;
-        }
-        this.#path = [];
+    if (this.tempLine) {
+      this.tempLine.setMap(null);
+      this.tempLine = null;
     }
 
-    clearArt() {
-        this.#drawn.forEach(p => p.setMap(null));
-        this.#drawn = [];
-    }
-
-    // Alias for compatibility
-    clearDrawn() {
-        this.clearArt();
-    }
-
-    getType() { return 'POLYGON'; }
+    this.currentPath = [];
+  }
 }
